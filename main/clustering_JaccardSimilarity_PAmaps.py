@@ -3,6 +3,9 @@ import os.path as osp
 import scipy
 import matplotlib.pyplot as plt
 import seaborn as sns
+import sys
+
+sys.path.append('..')
 
 from numpy.random import seed
 from sklearn.metrics import jaccard_score
@@ -73,32 +76,6 @@ for i in range(181):
 # Plot jaccard matrix
 sns.heatmap(jaccard_matrix, cmap="flare_r")
 plt.show()
-
-# # Cosine similarity
-# from sklearn.metrics.pairwise import cosine_similarity
-# dataset_orig = np.reshape(dataset_orig, np.shape(dataset_orig)[:-1])
-# cosine_matrix = cosine_similarity(dataset_orig,dataset_orig)
-#
-# # Circular correlation
-# from astropy.stats import circcorrcoef
-# corr_matrix = np.zeros((181, 181))
-# dataset_orig_rad = dataset_orig * np.pi/180
-# for i in range(181):
-#     for j in range(181):
-#         corr_matrix[i, j] = circcorrcoef(dataset_orig_rad[i],
-#         dataset_orig_rad[j])
-#
-# # Mahalanobis distance
-# from scipy.spatial.distance import mahalanobis
-# mahalanobis_matrix = np.zeros((181, 181))
-# dataset_orig_rad = dataset_orig * np.pi/180
-# for i in range(181):
-#     for j in range(181):
-#         if j!=i:
-#             covar = np.cov([dataset_orig[i],dataset_orig[j]])
-#             inv_covar = np.linalg.inv(covar)
-#             mahalanobis_matrix[i, j] = mahalanobis(dataset_orig[i],
-#             dataset_orig[j],inv_covar)
 
 
 #### Clustering ####

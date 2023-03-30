@@ -1,4 +1,7 @@
 import numpy as np
+import sys
+
+sys.path.append('..')
 
 from functions.def_ROIs_EarlyVisualAreas import roi
 from functions.individual_variability import grab_data

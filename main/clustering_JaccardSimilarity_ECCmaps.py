@@ -3,6 +3,9 @@ import os.path as osp
 import scipy
 import matplotlib.pyplot as plt
 import seaborn as sns
+import sys
+
+sys.path.append('..')
 
 from numpy.random import seed
 from sklearn.metrics import jaccard_score

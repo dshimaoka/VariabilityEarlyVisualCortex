@@ -3,6 +3,9 @@ import os.path as osp
 import scipy
 import matplotlib.pyplot as plt
 import seaborn as sns
+import sys
+
+sys.path.append('..')
 
 from numpy.random import seed
 from sklearn.metrics import jaccard_score
@@ -54,7 +57,7 @@ for i in list:
     dataset_segmented.append(data)
 
 # Distance to average
-clustering = np.load('./../clusters_individualIndeces.npz')['list']
+clustering = np.load('./../clusters_individualIndeces_PA.npz')['list']
 for i in range(6):
     mean_cluster = np.load('./../output/cluster_' + str(i) + '_weightedJaccard_eccentricityMask.npz')['list']
 
