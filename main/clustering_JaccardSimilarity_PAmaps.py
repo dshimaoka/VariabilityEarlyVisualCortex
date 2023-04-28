@@ -16,7 +16,7 @@ from functions.individual_variability import grab_data
 from scipy.spatial import distance
 
 # All individuals
-with open('./../list_subj') as fp:
+with open('./../list_subj.txt') as fp:
     subjects = fp.read().split("\n")
 list = subjects[0:len(subjects) - 1]
 

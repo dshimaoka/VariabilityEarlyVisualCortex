@@ -12,6 +12,10 @@ This repository contains all source code necessary to replicate our recent work 
 ## Installation and requirements 
 
 - Create a conda environment;
+```bash
+    conda create -n VariabilityEarlyVisualCortex python=XX
+    conda activate VariabilityEarlyVisualCortex
+```
 - Install the required packages that are available at requirements.txt: 
 
 ```bash
