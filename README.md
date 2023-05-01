@@ -4,6 +4,7 @@ This repository contains all source code necessary to replicate our recent work 
 
 ## Table of Contents
 * [Installation and requirements](#installation-and-requirements)
+* [Reproducibility](#reproducibility)
 * [Other resources](#other-resources)
 * [Citation](#citation)
 * [Contact](#contact)
@@ -13,7 +14,7 @@ This repository contains all source code necessary to replicate our recent work 
 
 - Create a conda environment;
 ```bash
-    conda create -n VariabilityEarlyVisualCortex python=XX
+    conda create -n VariabilityEarlyVisualCortex python=3.8
     conda activate VariabilityEarlyVisualCortex
 ```
 - Install the required packages that are available at requirements.txt: 
@@ -26,6 +27,27 @@ This repository contains all source code necessary to replicate our recent work 
 ```bash
     git clone https://github.com/felenitaribeiro/VariabilityEarlyVisualCortex.git
 ```   
+
+## Reproducibility
+
+Given that the updated version of nilearn (in which I modified a few plotting functionalities) requires an updated version of scikit-learn, and unfortunately, the random seeds differ, if you want to reproduce the same clusterings we report in our manuscript, you will have to create a different conda environment to run the clustering analyses.
+
+ Create a conda environment;
+```bash
+    conda create -n VariabilityEarlyVisualCortex_clustering python=3.6
+    conda activate VariabilityEarlyVisualCortex_clustering
+```
+- Install the required packages that are available at requirements_clustering.txt: 
+
+```bash
+    pip install -r requirements_clustering.txt
+```
+- Then, you may run: 
+
+```bash
+    cd ./main/
+    python clustering_JaccardSimilarity_PAmaps.py
+```
 
 ## Other resources
 

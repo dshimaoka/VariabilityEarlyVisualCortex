@@ -39,7 +39,6 @@ def PA_gradients(subject_id, path, plot_type = 'streamplot', binarize = False, s
     Plot of the polar angle gradient.   
     """
 
-    
     # Early visual cortex
     label_primary_visual_areas = ['ROI']
     final_mask_L, final_mask_R, index_L_mask, index_R_mask = roi(
@@ -50,6 +49,7 @@ def PA_gradients(subject_id, path, plot_type = 'streamplot', binarize = False, s
     final_mask_L_dorsal, final_mask_R_dorsal, index_L_mask_dorsal, index_R_mask_dorsal = ROI(
         label_primary_visual_areas)
 
+    # Number of nodes
     number_cortical_nodes = int(64984)
     number_hemi_nodes = int(number_cortical_nodes / 2)
 
@@ -59,7 +59,7 @@ def PA_gradients(subject_id, path, plot_type = 'streamplot', binarize = False, s
     coord_plane = np.array(flat_surf_pos.T[0:3,].T).astype(int)
     new_coord_plane = np.matmul([[0, 0, 1],[0, 1, 0]], coord_plane.T).T + 100
     
-    # Loading the polar angle values
+    # Loading polar angle values
     z_values = np.zeros((number_hemi_nodes, 1))
     data = scipy.io.loadmat(osp.join(path, 'cifti_polarAngle_all.mat'))[
             'cifti_polarAngle']
@@ -68,7 +68,6 @@ def PA_gradients(subject_id, path, plot_type = 'streamplot', binarize = False, s
                     0:number_hemi_nodes].reshape(
                         (number_hemi_nodes))[final_mask_L*final_mask_L_dorsal == 1], (-1, 1))
     z_values[final_mask_L*final_mask_L_dorsal != 1] = 0
-
 
     # Interpolating the polar angle values
     grid_x, grid_y = np.mgrid[40:120, 0:60]
@@ -103,7 +102,103 @@ def PA_gradients(subject_id, path, plot_type = 'streamplot', binarize = False, s
         plt.savefig(osp.join(save_path, 'PA_gradients_' + subject_id  + '.png'))
     return plt.show()
 
+def fieldSign(subject_id, path, save = False, save_path = None):
+    """
+    Plot the field sign for the dorsal portion of the early visual cortex.
+    Parameters
+    ----------
+    subject_id : int
+        Subject ID.
+    path : str
+        Path to the data.
+    save : bool, optional
+        Save the figure. The default is False.
+    save_path : str, optional
+        Path to save the figure. The default is None.
+    Returns
+    -------
+    Plot of the field sign. 
+    """
+
+    # Early visual cortex
+    label_primary_visual_areas = ['ROI']
+    final_mask_L, final_mask_R, index_L_mask, index_R_mask = roi(
+        label_primary_visual_areas)
+
+    # Dorsal portion
+    label_primary_visual_areas = ['ROI']
+    final_mask_L_dorsal, final_mask_R_dorsal, index_L_mask_dorsal, index_R_mask_dorsal = ROI(
+        label_primary_visual_areas)
+
+    # Number of nodes
+    number_cortical_nodes = int(64984)
+    number_hemi_nodes = int(number_cortical_nodes / 2)
+
+    # Loading the flat surface
+    flat_surf = nib.load(osp.join(path,'S1200_7T_Retinotopy181.L.sphere.32k_fs_LR.surf.gii'))
+    flat_surf_pos = flat_surf.agg_data('pointset')[final_mask_L*final_mask_L_dorsal==1]
+    coord_plane = np.array(flat_surf_pos.T[0:3,].T).astype(int)
+    new_coord_plane = np.matmul([[0, 0, 1],[0, 1, 0]], coord_plane.T).T + 100
+
+
+    #### Polar angle map ####
+    # Loading polar angle values
+    z_values_PA = np.zeros((number_hemi_nodes, 1))
+    data = scipy.io.loadmat(osp.join(path, 'cifti_polarAngle_all.mat'))[
+            'cifti_polarAngle']
+    z_values_PA[final_mask_L*final_mask_L_dorsal == 1] = np.reshape(
+                data['x' + str(subject_id) + '_fit1_polarangle_msmall'][0][0][
+                    0:number_hemi_nodes].reshape(
+                        (number_hemi_nodes))[final_mask_L*final_mask_L_dorsal == 1], (-1, 1))
+    z_values_PA[final_mask_L*final_mask_L_dorsal != 1] = 0
+
+    # Interpolating the polar angle values
+    grid_x, grid_y = np.mgrid[40:120, 0:60]
+    grid_z0_PA = griddata(new_coord_plane, z_values_PA[final_mask_L*final_mask_L_dorsal == 1], (grid_x, grid_y), method='linear')
+
+    # Determining the gradient
+    dx_PA, dy_PA = np.gradient(grid_z0_PA[:,:,0])
+
+
+    #### Eccentricity map ####
+    # Loading eccentricity values
+    z_values_ecc = np.zeros((number_hemi_nodes, 1))
+    data = scipy.io.loadmat(osp.join(path, 'cifti_eccentricity_all.mat'))[
+            'cifti_eccentricity']
+    z_values_ecc[final_mask_L*final_mask_L_dorsal == 1] = np.reshape(
+                data['x' + str(subject_id) + '_fit1_eccentricity_msmall'][0][0][
+                    0:number_hemi_nodes].reshape(
+                        (number_hemi_nodes))[final_mask_L*final_mask_L_dorsal == 1], (-1, 1))
+    z_values_ecc[final_mask_L*final_mask_L_dorsal != 1] = 0
+
+    # Interpolating the eccentricity values
+    grid_z0_ecc = griddata(new_coord_plane, z_values_ecc[final_mask_L*final_mask_L_dorsal == 1], (grid_x, grid_y), method='linear')
+
+    # Determining the gradient
+    dx_ecc, dy_ecc = np.gradient(grid_z0_ecc[:,:,0])
+
+    #### Field sign analysis ####
+    # Angle between gradient vectors
+    dot_product = dx_PA*dx_ecc + dy_PA*dy_ecc
+    modulus_PA = np.sqrt(dx_PA**2 + dy_PA**2)
+    modulus_ecc = np.sqrt(dx_ecc**2 + dy_ecc**2)
+    theta = np.arccos(dot_product/(modulus_PA*modulus_ecc))
+
+    # Binarizing
+    theta[dy_PA<0] = 2*np.pi - theta[dy_PA<0]
+    theta[theta>np.pi] = 2*np.pi
+    theta[theta<np.pi] = np.pi
+
+    # Plotting the visual field sign
+    plt.imshow(theta[:,:].T, extent=[40,120, 0,60], origin='lower')
+    if save == True:
+        plt.savefig(osp.join(save_path, 'fieldSign_' + subject_id  + '.png'))
+    return plt.show()
+
+
+
 if __name__ == '__main__':
-    subject_id = 100610
+    subject_id = 105923
     path = './../data'
     PA_gradients(subject_id, path, plot_type = 'streamplot')
+    fieldSign(subject_id, path)

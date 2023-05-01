@@ -9,9 +9,9 @@ from functions.def_ROIs_EarlyVisualAreas import roi
 from functions.def_ROIs_DorsalEarlyVisualCortex import roi as ROI
 from nilearn import plotting
 
-def polarAngle_plot(subject_id, path, dorsal_only = False, binarize = False, save = False, save_path = None):
+def normBOLD_plot(subject_id, path, dorsal_only = False, binarize = False, save = False, save_path = None):
     """
-    Plot the polar angle map of the early visual cortex.
+    Plot the normalized BOLD map of the early visual cortex.
     Parameters
     ----------
     subject_id : int
@@ -57,50 +57,53 @@ def polarAngle_plot(subject_id, path, dorsal_only = False, binarize = False, sav
     number_cortical_nodes = int(64984)
     number_hemi_nodes = int(number_cortical_nodes / 2)
 
-    # Loading the polarAngleictions
-    polarAngle = np.zeros((32492, 1))
-    data = scipy.io.loadmat(osp.join(path, 'cifti_polarAngle_all.mat'))[
-        'cifti_polarAngle']
-    if dorsal_only ==  False:
-        polarAngle[final_mask_L == 1] = np.reshape(
-            data['x' + str(subject_id) + '_fit1_polarangle_msmall'][0][0][
-            0:number_hemi_nodes].reshape(
-                (number_hemi_nodes))[final_mask_L == 1], (-1, 1))
-    else:
-        polarAngle[final_mask_L*final_mask_L_dorsal == 1] = np.reshape(
-            data['x' + str(subject_id) + '_fit1_polarangle_msmall'][0][0][
-            0:number_hemi_nodes].reshape(
-                (number_hemi_nodes))[final_mask_L*final_mask_L_dorsal == 1], (-1, 1))
+    # Loading the predictions
+    meanbold = np.zeros((32492, 1))
+    data = scipy.io.loadmat(
+                osp.join(path, 'cifti_meanbold_all.mat'))[
+                'cifti_meanbold']
 
-    # Masking
-    polarAngle = np.array(polarAngle) + threshold
-    if dorsal_only == False:
-        polarAngle[final_mask_L != 1] = 0
+    if dorsal_only ==  False:
+        meanbold[final_mask_L == 1] = np.reshape(
+            data['x' + str(subject_id) + '_fit1_meanbold_msmall'][0][
+                    0][0:number_hemi_nodes].reshape((number_hemi_nodes))[final_mask_L == 1], (-1, 1))
+        
     else:
-        polarAngle[final_mask_L*final_mask_L_dorsal != 1] = 0
+        meanbold[final_mask_L*final_mask_L_dorsal == 1] = np.reshape(
+            data['x' + str(subject_id) + '_fit1_meanbold_msmall'][0][
+                    0][0:number_hemi_nodes].reshape((number_hemi_nodes))[final_mask_L*final_mask_L_dorsal == 1], (-1, 1))
+    meanbold[np.isnan(meanbold) == 1] = 0
+    # Normalisation by dividing the value of each voxel by the maximum intensity
+    meanbold = meanbold / np.max(meanbold)
+    # Masking
+    meanbold = np.array(meanbold) + threshold
+    if dorsal_only == False:
+        meanbold[final_mask_L != 1] = 0
+    else:
+        meanbold[final_mask_L*final_mask_L_dorsal != 1] = 0
 
     # Binarizing values
     if binarize==True:
-        polarAngle[(polarAngle >= 0) & (polarAngle <= 45)] = 0 + threshold
-        polarAngle[(polarAngle > 45) & (polarAngle <= 180)]= 90 + threshold
-        polarAngle[(polarAngle >= 315) & (polarAngle <= 360)] = 360 + threshold
-        polarAngle[(polarAngle > 180) & (polarAngle < 315)] = 270 + threshold
+        meanbold[(meanbold >= 0) & (meanbold <= 45)] = 0 + threshold
+        meanbold[(meanbold > 45) & (meanbold <= 180)]= 90 + threshold
+        meanbold[(meanbold >= 315) & (meanbold <= 360)] = 360 + threshold
+        meanbold[(meanbold > 180) & (meanbold < 315)] = 270 + threshold
         if dorsal_only == False:
-            polarAngle[final_mask_L != 1] = 0
+            meanbold[final_mask_L != 1] = 0
         else:
-            polarAngle[final_mask_L*final_mask_L_dorsal != 1] = 0
+            meanbold[final_mask_L*final_mask_L_dorsal != 1] = 0
 
     # Plotting
     view = plotting.view_surf(
         surf_mesh=osp.join(osp.dirname(osp.realpath(__file__)), '../data'
                 '/S1200_7T_Retinotopy181.L.sphere.32k_fs_LR.surf.gii'),
-        surf_map=np.reshape(polarAngle[0:32492], (-1)), bg_map=background,
-        cmap='gist_rainbow_r', black_bg=False, symmetric_cmap=False,
-        threshold=threshold, vmax=361)
+        surf_map=np.reshape(meanbold[0:32492], (-1)), bg_map=background,
+        black_bg=False, symmetric_cmap=False, cmap='seismic',
+        threshold=threshold, vmin=1,vmax=2)
     # view.open_in_browser()
 
     if save == True:
-        view.save_as_html(osp.join(save_path,'polarAngle_dorsal_' + subject_id + '.html'))
+        view.save_as_html(osp.join(save_path,'meanbold_dorsal_' + subject_id + '.html'))
     return view
 
 if __name__ == '__main__':
@@ -115,4 +118,4 @@ if __name__ == '__main__':
 
     for subject in subjects:
         path = './../data'
-        polarAngle_plot(subject, path, dorsal_only=False).open_in_browser()
+        normBOLD_plot(subject, path, dorsal_only=False).open_in_browser()

@@ -33,7 +33,7 @@ def BOLDamplitude(list_of_ind, list_of_areas):
     final_mask_L_ROI, final_mask_R_ROI, index_L_mask_ROI, index_R_mask_ROI = \
         ROI(['ROI'])
 
-    # Data
+    # Loading data
     data = {'gain_data_LH': [],
             'gain_data_RH': [],
             'meanSignal_data_LH': [],
@@ -52,7 +52,6 @@ def BOLDamplitude(list_of_ind, list_of_areas):
             grab_data('meanbold', str(list_of_ind[i]), final_mask_R_ROI,
                       'RH'))
 
-
     # Mask for specific visual areas
     final_mask_L, final_mask_R, index_L_mask, index_R_mask = roi(
         list_of_areas)
@@ -69,7 +68,7 @@ def BOLDamplitude(list_of_ind, list_of_areas):
         np.load('./../main/MaskEccentricity_'
                 'above1below8ecc_RH.npz')['list'], (-1))
 
-    # Final mask - values equal to 2 mean nodes with visual area and within
+    # Final mask - values equal to 2 mean nodes within the ROI and 
     # eccentricity range
     mask_LH = final_mask_L + eccentricity_mask_LH
     mask_RH = final_mask_R + eccentricity_mask_RH

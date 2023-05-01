@@ -11,6 +11,7 @@ jupyterlab-widgets==3.0.7
 kiwisolver==1.4.4
 lxml==4.9.2
 matplotlib==3.7.1
+mne @ git+https://github.com/mne-tools/mne-python.git@18b80903da84483325584d8dffe7c9f847f12b81
 nibabel==5.1.0
 nilearn @ git+https://github.com/felenitaribeiro/nilearn.git@4198171e19336d827c03744d1ff73fb1612f14b9
 numpy==1.24.3

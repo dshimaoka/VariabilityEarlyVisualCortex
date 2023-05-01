@@ -1,103 +1,93 @@
 import numpy as np
 import scipy.io
 import os.path as osp
+import sys
 
+sys.path.append('..')
 from functions.def_ROIs_DorsalEarlyVisualCortex import roi
 from functions.def_ROIs_EarlyVisualAreas import roi as ROI
 from nilearn import plotting
 
-def polarAngle_plot(subject_id, hemisphere, mode):
-    path = './../data'
+def eccentricity_plot(subject_id, path, cluster, binarize = False):
+    """
+    Plot the eccentricity map of the early visual cortex.
+    Parameters
+    ----------
+    subject_id : int
+        Subject ID.
+    path : str
+        Path to the data.
+    cluster : str
+        cluster index.
+    binarize : bool, optional
+        Binarize the eccentricity map. The default is False.
+    Returns
+    -------
+    Plot of the mean eccentricity map from the given cluster.
+    """
+
+    # Loading the curvature map
     curv = scipy.io.loadmat(osp.join(path, 'cifti_curvature_all.mat'))[
         'cifti_curv']
     background = np.reshape(
         curv['x' + subject_id + '_curvature'][0][0][0:32492], (-1))
-
-    threshold = 1  # threshold for the curvature map
-
+    
     # Background settings
+    threshold = 1  # threshold for the curvature map
     nocurv = np.isnan(background)
     background[nocurv == 1] = 0
     background[background < 0] = 0
     background[background > 0] = 1
 
-    # Mask - Visual cortex
+    # Early visual cortex
     final_mask_L_ROI, final_mask_R_ROI, index_L_mask_ROI, index_R_mask_ROI = \
         ROI(['ROI'])
 
-    # Mask - Early visual cortex
-    final_mask_L, final_mask_R, index_L_mask, index_R_mask = \
+    # Dorsal portion
+    final_mask_L_dorsal, final_mask_R_dorsal, index_L_mask_dorsal, index_R_mask_dorsal = \
         roi(['ROI'])
 
-    # Mask for eccentricity range
-    eccentricity_mask_LH = np.reshape(
-        np.load('./../main/MaskEccentricity_'
-                'above1below8ecc_LH.npz')['list'], (-1))
+    # # Mask for eccentricity range
+    # eccentricity_mask_LH = np.reshape(
+    #     np.load('./../main/MaskEccentricity_'
+    #             'above1below8ecc_LH.npz')['list'], (-1))
 
     # Final mask
-    mask_LH = final_mask_L_ROI + final_mask_L
+    mask_LH = final_mask_L_ROI + final_mask_L_dorsal
     mask_LH[mask_LH != 2] = 0
     mask_LH[mask_LH == 2] = 1
-    mask_LH = mask_LH[final_mask_L_ROI == 1]  # * eccentricity_mask_LH
-
-
-    # final mask
+    mask_LH = mask_LH[final_mask_L_ROI == 1]
     final_mask_L_ROI[final_mask_L_ROI==1]=mask_LH
+    
 
-    polarAngle = np.zeros((32492, 1))
+    # Loading the data
+    eccentricity = np.zeros((32492, 1))
+    data = np.load('./../output/cluster_'+ str(cluster) +'_eccMaps_weightedJaccard_eccentricityMask.npz')['list']
 
-    number_cortical_nodes = int(64984)
-    number_hemi_nodes = int(number_cortical_nodes / 2)
+    # Masking
+    eccentricity[final_mask_L_ROI == 1] = np.reshape(
+        data, (-1, 1))
+    eccentricity = np.array(eccentricity) + threshold
+    eccentricity[final_mask_L_dorsal != 1] = 0
 
-    # Loading the predictions
-    data = np.load('./../output/cluster_'+ str(mode) +'_eccMaps_weightedJaccard_eccentricityMask.npz')['list']
+    # Binarizing
+    if binarize==True:
+        eccentricity[(eccentricity >= 0) & (eccentricity <= 2)] = 0 + threshold
+        eccentricity[(eccentricity > 2) & (eccentricity <= 4)] = 2 + threshold
+        eccentricity[(eccentricity > 4) & (eccentricity <= 6)] = 4 + threshold
+        eccentricity[(eccentricity > 6)] = 6 + threshold
+        eccentricity[final_mask_L_dorsal != 1] = 0
 
-    if hemisphere == 'left':
+    # Plotting
+    view = plotting.view_surf(
+        surf_mesh=osp.join(osp.dirname(osp.realpath(__file__)), '../data'
+                '/S1200_7T_Retinotopy181.L.sphere.32k_fs_LR.surf.gii'),
+        surf_map=np.reshape(eccentricity[0:32492], (-1)), bg_map=background,
+        cmap='gist_rainbow_r', black_bg=False, symmetric_cmap=False,
+        threshold=threshold, vmax=8)
+    return view.open_in_browser()
 
-        polarAngle[final_mask_L_ROI == 1] = np.reshape(
-            data, (-1, 1))
-
-        # Masking
-        pred = np.array(polarAngle) + threshold
-        pred[final_mask_L != 1] = 0
-
-        # # Binarizing
-        # pred[(pred >= 0) & (pred <= 2)] = 0
-        # pred[(pred > 2) & (pred <= 4)] = 2
-        # pred[(pred > 4) & (pred <= 6)] = 4
-        # pred[(pred > 6)] = 6
-
-
-        # Empirical map
-        view = plotting.view_surf(
-            surf_mesh=osp.join(osp.dirname(osp.realpath(__file__)), '../data'
-                 '/S1200_7T_Retinotopy181.L.sphere.32k_fs_LR.surf.gii'),
-            surf_map=np.reshape(pred[0:32492], (-1)), bg_map=background,
-            cmap='gist_rainbow_r', black_bg=False, symmetric_cmap=False,
-            threshold=threshold, vmax=8)
-        view.open_in_browser()
-
-    if hemisphere == 'right':
-        polarAngle[final_mask_R == 1] = np.reshape(
-            data['x' + str(subject_id) + '_fit1_polarangle_msmall'][0][0][
-            number_hemi_nodes:number_cortical_nodes].reshape(
-                (number_hemi_nodes))[final_mask_R == 1], (-1, 1))
-
-        # Masking
-        pred = np.array(polarAngle) + threshold
-        pred[final_mask_R != 1] = 0
-
-        # Empirical map
-        view = plotting.view_surf(
-            surf_mesh=osp.join(osp.dirname(osp.realpath(__file__)), '../data'
-                 '/S1200_7T_Retinotopy181.R.sphere.32k_fs_LR.surf.gii'),
-            surf_map=np.reshape(pred[0:32492], (-1)), bg_map=background,
-            cmap='gist_rainbow', black_bg=False, symmetric_cmap=False,
-            threshold=threshold, vmax=8)
-        view.open_in_browser()
-
-subject = '111312'
-hemisphere = 'left'
-
-for i in range(7):
-    polarAngle_plot(subject, hemisphere, mode = i)
+if __name__ == '__main__':
+    curv_background_subject = '111312'
+    for i in range(7):
+        eccentricity_plot(curv_background_subject, './../data/', cluster = i)
