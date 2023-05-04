@@ -5,16 +5,18 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import os.path as osp
+import os
 
 sys.path.append('..')
 
+from scipy.stats import pearsonr
 from functions.individual_variability import grab_data
 from functions.def_ROIs_EarlyVisualAreas import roi as ROI
 from functions.def_ROIs_WangParcels import roi
 
 #%%
 # All individuals
-with open('./../list_subj') as fp:
+with open('./../list_subj.txt') as fp:
     subjects = fp.read().split("\n")
 list_of_ind = subjects[0:len(subjects) - 1]
 
@@ -107,7 +109,8 @@ plt.close()
 
 # %%
 # Per visual area
-areas = [['V1d'], ['V2d'], ['V3d'], ['V1v'], ['V2v'], ['V3v']]
+# areas = [['V1d'], ['V2d'], ['V3d'], ['V1v'], ['V2v'], ['V3v']]
+areas = [['hV4']]
 for area in areas:
     data_LH = {}
     data_RH = {}
