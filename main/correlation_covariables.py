@@ -44,7 +44,7 @@ for modality in modalities:
     for subject in list_of_ind:
         tmp_LH = grab_data(modality, subject, final_mask_L_ROI, 'LH')[np.reshape(eccentricity_mask_LH, (-1,1))!=0]
         tmp_RH = grab_data(modality, subject, final_mask_R_ROI, 'RH')[np.reshape(eccentricity_mask_RH, (-1,1))!=0]
-        
+        print(tmp_LH.shape)
         data_LH[modality].append(np.reshape(tmp_LH, (-1,1)))
         data_RH[modality].append(np.reshape(tmp_RH, (-1,1)))
 
@@ -86,6 +86,10 @@ df_RH = pd.DataFrame.from_dict(data_RH)
 corr_matrix_LH = df_LH.corr()
 corr_matrix_RH = df_RH.corr()
 
+corr_matrix_RH.to_csv('./../output/figure3/correlationNonNeuralVariables_RH_V1-3_181participants.csv')
+corr_matrix_LH.to_csv('./../output/figure3/correlationNonNeuralVariables_LH_V1-3_181participants.csv')
+
+#%%
 # Create an output folder if it doesn't already exist
 directory = './../output/figure3'
 if not osp.exists(directory):
@@ -96,7 +100,7 @@ mask = np.zeros_like(corr_matrix_LH)
 mask[np.triu_indices_from(mask)] = True
 
 sns.heatmap(corr_matrix_LH, annot=corr_matrix_LH, fmt ='.2f', mask=mask, square=True, cmap="PuOr", vmin=-.5, vmax=.5)
-plt.savefig('./../output/figure3/correlationNonNeuralVariables_LH_V1-3_181participants', format="svg")
+plt.cfig('./../output/figure3/correlationNonNeuralVariables_LH_V1-3_181participants', format="svg")
 plt.close()
 
 # Right hemisphere
@@ -109,8 +113,8 @@ plt.close()
 
 # %%
 # Per visual area
-# areas = [['V1d'], ['V2d'], ['V3d'], ['V1v'], ['V2v'], ['V3v']]
-areas = [['hV4']]
+areas = [['V1d'], ['V2d'], ['V3d'], ['V1v'], ['V2v'], ['V3v'],['hV4']]
+# areas = [['hV4']]
 for area in areas:
     data_LH = {}
     data_RH = {}
@@ -133,11 +137,13 @@ for area in areas:
     for modality in modalities:
         data_LH[modality] = []
         data_RH[modality] = []
+
+
         
         for subject in list_of_ind:
             tmp_LH = grab_data(modality, subject, final_mask_L_ROI, 'LH')[np.reshape(mask_LH, (-1,1))==2]
             tmp_RH = grab_data(modality, subject, final_mask_R_ROI, 'RH')[np.reshape(mask_RH, (-1,1))==2]
-            
+            print(tmp_LH.shape)
             data_LH[modality].append(np.reshape(tmp_LH, (-1,1)))
             data_RH[modality].append(np.reshape(tmp_RH, (-1,1)))
 
@@ -159,21 +165,23 @@ for area in areas:
     corr_matrix_LH = df_LH.corr()
     corr_matrix_RH = df_RH.corr()
 
-    # Left hemisphere
-    mask = np.zeros_like(corr_matrix_LH)
-    mask[np.triu_indices_from(mask)] = True
+    corr_matrix_LH.to_csv('./../output/figure3/correlationNonNeuralVariables_LH_' + str(area) + '_181participants.csv')
+    corr_matrix_RH.to_csv('./../output/figure3/correlationNonNeuralVariables_RH_' + str(area) + '_181participants.csv')
 
-    sns.heatmap(corr_matrix_LH, mask=mask, square=True, cmap="PuOr", vmin=-.5, vmax=.5)
-    plt.savefig('./../output/figure3/correlationNonNeuralVariables_LH_' + str(area) +
-                '_181participants', format="svg")
-    plt.close()
+    # # Left hemisphere
+    # mask = np.zeros_like(corr_matrix_LH)
+    # mask[np.triu_indices_from(mask)] = True
 
-    # Right hemisphere
-    mask = np.zeros_like(corr_matrix_RH)
-    mask[np.triu_indices_from(mask)] = True
+    # sns.heatmap(corr_matrix_LH, mask=mask, square=True, cmap="PuOr", vmin=-.5, vmax=.5)
+    # plt.savefig('./../output/figure3/correlationNonNeuralVariables_LH_' + str(area) +
+    #             '_181participants', format="svg")
+    # plt.close()
 
-    sns.heatmap(corr_matrix_RH, mask=mask, square=True, cmap="PuOr", vmin=-.5, vmax=.5)
-    plt.savefig('./../output/figure3/correlationNonNeuralVariables_RH_' + str(area) +
-                '_181participants', format="svg")
-    plt.close()
-# %%
+    # # Right hemisphere
+    # mask = np.zeros_like(corr_matrix_RH)
+    # mask[np.triu_indices_from(mask)] = True
+
+    # sns.heatmap(corr_matrix_RH, mask=mask, square=True, cmap="PuOr", vmin=-.5, vmax=.5)
+    # plt.savefig('./../output/figure3/correlationNonNeuralVariables_RH_' + str(area) +
+    #             '_181participants', format="svg")
+    # plt.close()c# %%

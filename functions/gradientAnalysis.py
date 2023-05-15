@@ -7,7 +7,7 @@ import time
 import matplotlib.pyplot as plt
 import scipy
 import nibabel as nib
-import scipy
+from scipy.ndimage import gaussian_filter
 from scipy.interpolate import griddata
 
 sys.path.append('..')
@@ -17,7 +17,7 @@ from functions.def_ROIs_EarlyVisualAreas import roi
 from functions.def_ROIs_DorsalEarlyVisualCortex import roi as ROI
 from functions.individual_variability import grab_data
 
-def PA_gradients(subject_id, path, plot_type = 'streamplot', binarize = False, save = False, save_path = None):
+def PA_gradients(subject_id, path, plot_type = 'streamplot', binarize = False, dorsal_only=True, save = False, save_path = None):
     """
     Plot the polar angle gradient for the dorsal portion of the early visual cortex.
     Parameters
@@ -30,6 +30,8 @@ def PA_gradients(subject_id, path, plot_type = 'streamplot', binarize = False, s
         Type of plot. The default is 'streamplot'.
     binarize : bool, optional
         Binarize the polar angle map. The default is False.
+    dorsal_only : bool, optional
+        Plot only the dorsal portion of the early visual cortex. The default is True.
     save : bool, optional
         Save the figure. The default is False.
     save_path : str, optional
@@ -48,7 +50,8 @@ def PA_gradients(subject_id, path, plot_type = 'streamplot', binarize = False, s
     label_primary_visual_areas = ['ROI']
     final_mask_L_dorsal, final_mask_R_dorsal, index_L_mask_dorsal, index_R_mask_dorsal = ROI(
         label_primary_visual_areas)
-
+    if dorsal_only ==False:
+        final_mask_L_dorsal = np.ones(np.shape(final_mask_L_dorsal))
     # Number of nodes
     number_cortical_nodes = int(64984)
     number_hemi_nodes = int(number_cortical_nodes / 2)
@@ -71,6 +74,8 @@ def PA_gradients(subject_id, path, plot_type = 'streamplot', binarize = False, s
 
     # Interpolating the polar angle values
     grid_x, grid_y = np.mgrid[40:120, 0:60]
+    if dorsal_only == False:
+        grid_x, grid_y = np.mgrid[20:120, 0:100]
     grid_z0 = griddata(new_coord_plane, z_values[final_mask_L*final_mask_L_dorsal == 1], (grid_x, grid_y), method='linear')
 
     # Determining the gradient
@@ -92,17 +97,20 @@ def PA_gradients(subject_id, path, plot_type = 'streamplot', binarize = False, s
     V = dy[::2, ::2]
 
     # Plotting the gradient
-    plt.imshow(grid_z0[:,:,0].T, extent=[40,120, 0,60], origin='lower', cmap='gist_rainbow_r', vmax = 361)
+    if dorsal_only == True:
+        plt.imshow(grid_z0[:,:,0].T, extent=[40,120, 0,60], origin='lower', cmap='gist_rainbow_r', vmax = 361)
+    if dorsal_only == False:
+        plt.imshow(grid_z0[:,:,0].T, extent=[20,120, 0,100], origin='lower', cmap='gist_rainbow_r', vmax = 361)
     if plot_type == 'streamplot':
         plt.streamplot(X.T, Y.T, U.T, V.T,density = 2, linewidth=1, arrowsize=1, arrowstyle='->', color='k')
     elif plot_type == 'quiver':
         plt.quiver(X, Y, U, V,scale = 10, units = 'x')
 
     if save == True:
-        plt.savefig(osp.join(save_path, 'PA_gradients_' + subject_id  + '.png'))
+        plt.savefig(osp.join(save_path, 'PA_gradients_' + str(subject_id)  + '.png'))
     return plt.show()
 
-def fieldSign(subject_id, path, save = False, save_path = None):
+def fieldSign(subject_id, path, dorsal_only=True, smoothing = False, save = False, save_path = None):
     """
     Plot the field sign for the dorsal portion of the early visual cortex.
     Parameters
@@ -111,6 +119,10 @@ def fieldSign(subject_id, path, save = False, save_path = None):
         Subject ID.
     path : str
         Path to the data.
+    dorsal_only : bool, optional
+        Plot the dorsal portion only. The default is True.
+    smoothing : bool, optional
+        Smooth the polar angle interpolation. The default is False.
     save : bool, optional
         Save the figure. The default is False.
     save_path : str, optional
@@ -129,7 +141,8 @@ def fieldSign(subject_id, path, save = False, save_path = None):
     label_primary_visual_areas = ['ROI']
     final_mask_L_dorsal, final_mask_R_dorsal, index_L_mask_dorsal, index_R_mask_dorsal = ROI(
         label_primary_visual_areas)
-
+    if dorsal_only ==False:
+        final_mask_L_dorsal = np.ones(np.shape(final_mask_L_dorsal))
     # Number of nodes
     number_cortical_nodes = int(64984)
     number_hemi_nodes = int(number_cortical_nodes / 2)
@@ -150,15 +163,26 @@ def fieldSign(subject_id, path, save = False, save_path = None):
                 data['x' + str(subject_id) + '_fit1_polarangle_msmall'][0][0][
                     0:number_hemi_nodes].reshape(
                         (number_hemi_nodes))[final_mask_L*final_mask_L_dorsal == 1], (-1, 1))
+    # Shifting PA values
+    sum = z_values_PA < 180
+    minus = z_values_PA > 180
+    z_values_PA[sum] = z_values_PA[sum] + 180
+    z_values_PA[minus] = z_values_PA[minus] - 180
+
     z_values_PA[final_mask_L*final_mask_L_dorsal != 1] = 0
 
     # Interpolating the polar angle values
     grid_x, grid_y = np.mgrid[40:120, 0:60]
+    if dorsal_only == False:
+        grid_x, grid_y = np.mgrid[20:120, 0:100]
     grid_z0_PA = griddata(new_coord_plane, z_values_PA[final_mask_L*final_mask_L_dorsal == 1], (grid_x, grid_y), method='linear')
 
+    # Smoothing the polar angle map
+    if smoothing == True:
+        grid_z0_PA[:,:,0] = gaussian_filter(grid_z0_PA[:,:,0], sigma=.8)
+    
     # Determining the gradient
     dx_PA, dy_PA = np.gradient(grid_z0_PA[:,:,0])
-
 
     #### Eccentricity map ####
     # Loading eccentricity values
@@ -183,22 +207,33 @@ def fieldSign(subject_id, path, save = False, save_path = None):
     modulus_PA = np.sqrt(dx_PA**2 + dy_PA**2)
     modulus_ecc = np.sqrt(dx_ecc**2 + dy_ecc**2)
     theta = np.arccos(dot_product/(modulus_PA*modulus_ecc))
+    
+    # Cross product
+    cross_product = dx_PA*dy_ecc - dy_PA*dx_ecc
 
     # Binarizing
-    theta[dy_PA<0] = 2*np.pi - theta[dy_PA<0]
+    theta[cross_product<0] = 2*np.pi - theta[cross_product<0]
     theta[theta>np.pi] = 2*np.pi
     theta[theta<np.pi] = np.pi
 
     # Plotting the visual field sign
-    plt.imshow(theta[:,:].T, extent=[40,120, 0,60], origin='lower')
+    if dorsal_only == True:
+        plt.imshow(theta[:,:].T, extent=[40,120, 0,60], origin='lower', cmap='viridis')
+    if dorsal_only == False:
+        plt.imshow(theta[:,:].T, extent=[20,120, 0,100], origin='lower', cmap='viridis')
     if save == True:
-        plt.savefig(osp.join(save_path, 'fieldSign_' + subject_id  + '.png'))
+        if smoothing==False:
+            plt.savefig(osp.join(save_path, 'fieldSign_' + str(subject_id)  + '.png'))
+        else:
+            plt.savefig(osp.join(save_path, 'fieldSign_' + str(subject_id)  + '_smoothed.png'))
     return plt.show()
 
 
 
 if __name__ == '__main__':
-    subject_id = 105923
-    path = './../data'
-    PA_gradients(subject_id, path, plot_type = 'streamplot')
-    fieldSign(subject_id, path)
+    subjects = [397760, 926862, 105923, 114823, 198653, 789373] # Figure 7
+    # subjects = [585256]
+    for subject_id in subjects:
+        path = './../data'
+        PA_gradients(subject_id, path, plot_type = 'streamplot', dorsal_only = False, save=True, save_path = './../figures')
+        fieldSign(subject_id, path, save=True, dorsal_only=False, smoothing=True, save_path = './../figures')

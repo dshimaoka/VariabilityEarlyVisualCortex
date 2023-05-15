@@ -104,15 +104,20 @@ def polarAngle_plot(subject_id, path, dorsal_only = False, binarize = False, sav
     return view
 
 if __name__ == '__main__':
-    subjects =['585256', '146735', '157336', '114823', '581450', '725751'] # figure 1
+    # subjects =['585256', '146735', '157336', '114823', '581450', '725751'] # figure 1
     # subjects = ['108323', '105923', '178243', '193845', '157336', '169343'] # figure 4 - similar
     # subjects = ['148133', '176542', '181232', '132118', '177140', '204521'] # figure 4 - dissimilar
+    # subjects =['573249', '130114', '171633', '249947', '108323', '164131', '552241', '966975', '525541'] # Supplementary Figure 3
     # subjects = ['105923', '109123', '111514', '114823', '116726', '125525',
     #     '167036', '169747', '176542', '198653', '205220', '360030',
     #     '385046', '429040', '581450', '671855', '706040', '770352',
     #     '771354', '789373', '814649', '825048', '826353', '859671',
-    #     '942658', '973770'] # Supplementary Figure 2
-
+    #     '942658', '973770'] # Supplementary Figure 4
+    # subjects = ['725751', '118225', '178243', '192641', '115825', '169040', '644246', '995174', '320826'] # Supplementary Figure 5
+    # subjects = ['818859', '131217', '182436', '263436', '126426', '178142', '757764', '541943', '330324'] # Supplementary Figure 6
+    # subjects = ['905147', '135124', '195041', '397760', '130518', '177140', '572045', '401422', '111312'] # Supplementary Figure 7
+    subjects = ['536647', '169343', '214019', '251833', '156334', '204521', '389357', '878776', '203418'] # Supplementary Figure 8
+    subjects = ['536647']
     for subject in subjects:
         path = './../data'
-        polarAngle_plot(subject, path, dorsal_only=False).open_in_browser()
+        polarAngle_plot(subject, path, binarize=True, dorsal_only=True).open_in_browser()
