@@ -3,34 +3,42 @@
 This repository contains all source code necessary to replicate our recent work entitled "Variability of visual field maps in human early extrastriate cortex challenges the canonical model of organization of V2 and V3" available on [bioRxiv](https://www.biorxiv.org/content/10.1101/2022.10.16.511648v2.abstract). 
 
 ## Table of Contents
-* [Installation and requirements](#installation-and-requirements)
-* [Reproducibility](#reproducibility)
+* [Visualization and Reproducibility](#Visualization-and-Reproducibility)
+* [Reproducibility of clusters](#Reproducibility-of-clusters)
 * [Other resources](#other-resources)
 * [Citation](#citation)
 * [Contact](#contact)
 
 
-## Installation and requirements 
+## Visualization and Reproducibility
+For visualization and further analysis, we recommend using NeuroDesk[]:
 
-- Create a conda environment;
-```bash
-    conda create -n VariabilityEarlyVisualCortex python=3.8
-    conda activate VariabilityEarlyVisualCortex
-```
-- Install the required packages that are available at requirements.txt: 
-
-```bash
-    pip install -r requirements.txt
-```
-- Clone this repository (or alternatevely you can clone a forked version of this repository):
+1. Clone this repository (or a forked version of this repository):
 
 ```bash
     git clone https://github.com/felenitaribeiro/VariabilityEarlyVisualCortex.git
 ```   
 
-## Reproducibility
+2. Download the available data at [Balsa](https://balsa.wustl.edu/study/9Zkk) following these steps: https://www.neurodesk.org/tutorials/functional_imaging/connectomeworkbench/ and extract to ./matlab
 
-Given that the updated version of nilearn (in which I modified a few plotting functionalities) requires an updated version of scikit-learn, and unfortunately, the random seeds differ, if you want to reproduce the same clusterings we report in our manuscript, you will have to create a different conda environment to run the clustering analyses.
+Note that you only need the "Retinotopy_HCP_7T_181_Fit1.scene", "Retinotopy_HCP_7T_181_Fit2.scene", "Retinotopy_HCP_7T_181_Fit3.scene", and "Retinotopy_HCP_7T_181_fsaverage.scene" files.
+
+3. Set up your Matlab license following these steps: https://www.neurodesk.org/tutorials/programming/matlab/  
+
+This step is required to convert the "dscalar.nii" files to ".mat"
+
+4. Run our envPrep.sh script:
+```bash
+    bash ./envPrep.sh
+```   
+This bash script includes data preparation and conda environment creation with required packages.
+
+5. Finally, you can launch our Jupyter notebook by double-clicking on maps-visualization.ipynb on Jupyter lab:
+
+
+## Reproducibility of clusters
+
+Given that the updated version of nilearn (in which we modified a few plotting functionalities) requires an updated version of scikit-learn, and unfortunately, the random seeds differ, to reproduce the same clusters we report in our manuscript, you will have to create a different conda environment to run the clustering analyses.
 
  Create a conda environment;
 ```bash

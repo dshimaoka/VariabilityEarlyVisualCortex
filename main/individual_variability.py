@@ -1,4 +1,3 @@
-#%%
 import numpy as np
 import sys
 import os
@@ -11,11 +10,10 @@ from functions.individual_variability import difference_plots
 from functions.individual_variability import difference_plots_sameHemi
 
 # All individuals
-with open('./../list_subj') as fp:
+with open('./../list_subj.txt') as fp:
     subjects = fp.read().split("\n")
 list_of_ind = subjects[0:len(subjects) - 1]
 
-#%%
 modalities = ['polarAngle', 'eccentricity','curvature', 'meanbold',]
 for modality in modalities:
 
@@ -71,5 +69,3 @@ for modality in modalities:
     data.to_pickle('./../output/lme/longFormat_' + modality + '_MSMall_all.pkl')
     data.to_excel('./../output/lme/longFormat_' + modality + '_MSMall_all.xlsx')
     difference_plots_sameHemi(data, modality,)
-
-# %%

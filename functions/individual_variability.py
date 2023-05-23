@@ -17,7 +17,7 @@ def grab_data(modality, subject_ID, roi_mask, hemisphere):
 
     Args:
         modality (string): modality of the data ('polarAngle', 'eccentricity',
-            'myelin', 'curvature')
+            'meanbold', 'curvature')
         subject_ID (string): HCP ID
         roi_mask (numpy array): Mask of the region of interest from the left
             (or the right) hemisphere (32492,)
@@ -101,6 +101,7 @@ def grab_data(modality, subject_ID, roi_mask, hemisphere):
                 data['x' + str(subject_ID) + '_myelinmap'][0][0][
                 number_hemi_nodes:number_cortical_nodes].reshape(
                     (number_hemi_nodes))[roi_mask == 1], (-1, 1))
+            
         # functional maps
         if modality == 'gain':
             data_ind = np.reshape(
@@ -132,11 +133,10 @@ def grab_data(modality, subject_ID, roi_mask, hemisphere):
 
 
 def grab_data_fit(modality, subject_ID, roi_mask, hemisphere, fit_name):
-    """Load and return individual's data.
+    """Load and return individual's data given a specific pRF mapping fit.
 
     Args:
-        modality (string): modality of the data ('polarAngle', 'eccentricity',
-            'myelin', 'curvature')
+        modality (string): modality of the data ('polarAngle', 'eccentricity')
         subject_ID (string): HCP ID
         roi_mask (numpy array): Mask of the region of interest from the left
             (or the right) hemisphere (32492,)
@@ -201,12 +201,12 @@ def grab_data_fit(modality, subject_ID, roi_mask, hemisphere, fit_name):
 
 
 def difference_score(modality, list_of_ind, list_of_areas):
-    """Determine the vertex-wise difference between individual's data and the
+    """Determine the vertex-wise difference between an individual's data and the
     average map.
 
     Args:
         modality (string): modality of the data ('polarAngle', 'eccentricity',
-            'myelin', 'curvature')
+            'meanbold', 'curvature')
         list_of_ind (list): list with HCP IDs
         list_of_areas (list): list with the names of visual areas
 
@@ -295,8 +295,7 @@ def intra_individual_difference_score(modality, list_of_ind, list_of_areas):
      for each individual.
 
     Args:
-        modality (string): modality of the data ('polarAngle', 'eccentricity',
-            'myelin', 'curvature')
+        modality (string): modality of the data ('polarAngle', 'eccentricity')
         list_of_ind (list): list with HCP IDs
         list_of_areas (list): list with the names of visual areas
 
@@ -381,7 +380,7 @@ def difference_plots(modality, differences_dorsal_final,
 
     Args:
         modality (string): modality of the data ('polarAngle', 'eccentricity',
-            'myelin', 'curvature')
+            'meanbold', 'curvature')
         differences_dorsal_final (numpy array): Mean difference across
             vertices per individual for corresponding visual areas in the left
             hemisphere (output from difference_score function)
@@ -394,27 +393,6 @@ def difference_plots(modality, differences_dorsal_final,
     """
 
     fig = plt.figure(figsize=(10, 5))
-
-    # # Dorsal areas
-    # visual_areas = [['V1d'], ['V2d'], ['V3d']]
-    # differences_dorsal = []
-    # for i in range(len(visual_areas)):
-    #     diff_LH, diff_RH = difference_score(str(modality), list_of_ind,
-    #                                         visual_areas[i])
-    #     differences_dorsal_temp = np.concatenate(
-    #         ([np.reshape(np.array(list_of_ind), (-1)),
-    #           np.reshape(diff_LH, (-1)), len(diff_LH) * ['LH'],
-    #           len(diff_LH) * visual_areas[i],
-    #           len(diff_LH) * [visual_areas[i][0][:2]],
-    #           len(diff_LH) * ['dorsal']],
-    #          [np.reshape(np.array(list_of_ind), (-1)),
-    #           np.reshape(diff_RH, (-1)), len(diff_RH) * ['RH'],
-    #           len(diff_RH) * visual_areas[i],
-    #           len(diff_RH) * [visual_areas[i][0][:2]],
-    #           len(diff_RH) * ['dorsal']]), axis=1)
-    #     differences_dorsal.append(differences_dorsal_temp)
-    #
-    # differences_dorsal_final = np.concatenate(differences_dorsal, axis=1)
 
     df_1 = pd.DataFrame(
         columns=['HCP_ID', 'Mean difference from the average map',
@@ -437,34 +415,13 @@ def difference_plots(modality, differences_dorsal_final,
     if modality == 'eccentricity':
         plt.ylim([0, 3])
         plt.title('Eccentricity')
-    if modality == 'myelin':
+    if modality == 'meanbold':
         plt.ylim([0, .3])
-        plt.title('Myelin')
+        plt.title('Mean BOLD')
     if modality == 'curvature':
         plt.ylim([0, .3])
         plt.title('Curvature')
     sns.despine()
-
-    # # Ventral areas
-    # visual_areas = [['V1v'], ['V2v'], ['V3v']]
-    # differences_ventral = []
-    # for i in range(len(visual_areas)):
-    #     diff_LH, diff_RH = difference_score(str(modality), list_of_ind,
-    #                                         visual_areas[i])
-    #     differences_ventral_temp = np.concatenate(
-    #         ([np.reshape(np.array(list_of_ind), (-1)),
-    #           np.reshape(diff_LH, (-1)), len(diff_LH) * ['LH'],
-    #           len(diff_LH) * visual_areas[i],
-    #           len(diff_LH) * [visual_areas[i][0][:2]],
-    #           len(diff_LH) * ['ventral']],
-    #          [np.reshape(np.array(list_of_ind), (-1)),
-    #           np.reshape(diff_RH, (-1)), len(diff_RH) * ['RH'],
-    #           len(diff_RH) * visual_areas[i],
-    #           len(diff_RH) * [visual_areas[i][0][:2]],
-    #           len(diff_RH) * ['ventral']]), axis=1)
-    #     differences_ventral.append(differences_ventral_temp)
-    #
-    # differences_ventral_final = np.concatenate(differences_ventral, axis=1)
 
     df_2 = pd.DataFrame(
         columns=['HCP_ID', 'Mean difference from the average map',
@@ -487,9 +444,9 @@ def difference_plots(modality, differences_dorsal_final,
     if modality == 'eccentricity':
         plt.ylim([0, 3])
         plt.title('Eccentricity')
-    if modality == 'myelin':
+    if modality == 'meanbold':
         plt.ylim([0, .3])
-        plt.title('Myelin')
+        plt.title('Mean BOLD')
     if modality == 'curvature':
         plt.ylim([0, .3])
         plt.title('Curvature')
@@ -500,8 +457,8 @@ def difference_plots(modality, differences_dorsal_final,
     if not osp.exists(directory):
         os.makedirs(directory)
 
-    # plt.savefig('./../output/lme/MeanDifFromTheMean_combined_' + str(modality) +
-    #             '_181participants', format="svg")
+    plt.savefig('./../output/lme/MeanDifFromTheMean_combined_' + str(modality) +
+                '_181participants', format="pdf")
     plt.show()
     df = pd.concat([df_1, df_2])
     return df
@@ -509,12 +466,11 @@ def difference_plots(modality, differences_dorsal_final,
 
 def intraIndividual_difference_plots(modality, differences_dorsal_final,
                                      differences_ventral_final):
-    """Generate left versus right hemispheres plots of individual variability
+    """Generate left versus right hemispheres plots of intra individual variability
         in topographic features.
 
     Args:
-        modality (string): modality of the data ('polarAngle', 'eccentricity',
-            'myelin', 'curvature')
+        modality (string): modality of the data ('polarAngle', 'eccentricity')
         differences_dorsal_final (numpy array): Mean difference across
             vertices per individual for corresponding visual areas in the left
             hemisphere (output from difference_score function)
@@ -550,12 +506,6 @@ def intraIndividual_difference_plots(modality, differences_dorsal_final,
     if modality == 'eccentricity':
         plt.ylim([0, 3])
         plt.title('Eccentricity')
-    if modality == 'myelin':
-        plt.ylim([0, .3])
-        plt.title('Myelin')
-    if modality == 'curvature':
-        plt.ylim([0, .3])
-        plt.title('Curvature')
     sns.despine()
 
     df_2 = pd.DataFrame(
@@ -580,12 +530,6 @@ def intraIndividual_difference_plots(modality, differences_dorsal_final,
     if modality == 'eccentricity':
         plt.ylim([0, 3])
         plt.title('Eccentricity')
-    if modality == 'myelin':
-        plt.ylim([0, .3])
-        plt.title('Myelin')
-    if modality == 'curvature':
-        plt.ylim([0, .3])
-        plt.title('Curvature')
     sns.despine()
 
     # Create an output folder if it doesn't already exist
@@ -593,9 +537,9 @@ def intraIndividual_difference_plots(modality, differences_dorsal_final,
     if not osp.exists(directory):
         os.makedirs(directory)
 
-    # plt.savefig('./../output/lme/IntraIndividual_MeanDifFromTheMean_combined_'
+    # plt.savefig('./../output/lme/IntraIndividual_MeanDifFit2vsFit3_combined_'
     # + str(modality) +
-    #             '_181participants', format="svg")
+    #             '_181participants', format="pdf")
     plt.show()
     df = pd.concat([df_1, df_2])
     return df
@@ -609,7 +553,9 @@ def difference_plots_sameHemi(data, modality):
         data (pandas DataFrame):  summary data used to generate the plots,
             which is the output of difference_plots
         modality (string): modality of the data ('polarAngle', 'eccentricity',
-            'myelin', 'curvature')
+            'meanbold', 'curvature')
+    Returns:
+        plt.show(): plot of the data
 
     """
     fig = plt.figure(figsize=(10, 5))
@@ -625,13 +571,12 @@ def difference_plots_sameHemi(data, modality):
     if modality == 'eccentricity':
         plt.ylim([0, 3])
         plt.title('Eccentricity' + ' - ' + str('LH'))
-    if modality == 'myelin':
+    if modality == 'meanbold':
         plt.ylim([0, .3])
-        plt.title('Myelin' + ' - ' + str('LH'))
+        plt.title('Mean BOLD' + ' - ' + str('LH'))
     if modality == 'curvature':
         plt.ylim([0, .3])
         plt.title('Curvature' + ' - ' + str('LH'))
-    # plt.title(str(title) + ' - ' + str('LH'))
     sns.despine()
 
     fig.add_subplot(1, 2, 2)
@@ -647,13 +592,12 @@ def difference_plots_sameHemi(data, modality):
     if modality == 'eccentricity':
         plt.ylim([0, 3])
         plt.title('Eccentricity' + ' - ' + str('RH'))
-    if modality == 'myelin':
+    if modality == 'meanbold':
         plt.ylim([0, .3])
-        plt.title('Myelin' + ' - ' + str('RH'))
+        plt.title('Mean BOLD' + ' - ' + str('RH'))
     if modality == 'curvature':
         plt.ylim([0, .3])
         plt.title('Curvature' + ' - ' + str('RH'))
-    # plt.title(str(title) + ' - ' + str('RH'))
     sns.despine()
 
     # Create an output folder if it doesn't already exist
@@ -664,19 +608,20 @@ def difference_plots_sameHemi(data, modality):
     plt.savefig(
         './../output/lme/MeanDifFromTheMean_perHemi_' + str(modality) +
         '_181participants',
-        format="svg")
-    plt.show()
+        format="pdf")
+    return plt.show()
 
 
 def intraIndividual_difference_plots_sameHemi(data, modality):
-    """Generate dorsal versus ventral plots of individual variability
+    """Generate dorsal versus ventral plots of intra individual variability
         of topographic features.
 
     Args:
         data (pandas DataFrame):  summary data used to generate the plots,
-            which is the output of difference_plots
-        modality (string): modality of the data ('polarAngle', 'eccentricity',
-            'myelin', 'curvature')
+            which is the output of intraIndividual_difference_plots
+        modality (string): modality of the data ('polarAngle', 'eccentricity')
+    Returns:
+        plt.show(): plot of the data
 
     """
     fig = plt.figure(figsize=(10, 5))
@@ -693,13 +638,6 @@ def intraIndividual_difference_plots_sameHemi(data, modality):
     if modality == 'eccentricity':
         plt.ylim([0, 3])
         plt.title('Eccentricity' + ' - ' + str('LH'))
-    if modality == 'myelin':
-        plt.ylim([0, .3])
-        plt.title('Myelin' + ' - ' + str('LH'))
-    if modality == 'curvature':
-        plt.ylim([0, .3])
-        plt.title('Curvature' + ' - ' + str('LH'))
-    # plt.title(str(title) + ' - ' + str('LH'))
     sns.despine()
 
     fig.add_subplot(1, 2, 2)
@@ -716,13 +654,6 @@ def intraIndividual_difference_plots_sameHemi(data, modality):
     if modality == 'eccentricity':
         plt.ylim([0, 3])
         plt.title('Eccentricity' + ' - ' + str('RH'))
-    if modality == 'myelin':
-        plt.ylim([0, .3])
-        plt.title('Myelin' + ' - ' + str('RH'))
-    if modality == 'curvature':
-        plt.ylim([0, .3])
-        plt.title('Curvature' + ' - ' + str('RH'))
-    # plt.title(str(title) + ' - ' + str('RH'))
     sns.despine()
 
     # Create an output folder if it doesn't already exist
@@ -734,5 +665,5 @@ def intraIndividual_difference_plots_sameHemi(data, modality):
         './../output/lme/IntraIndividual_MeanDifFit2vsFit3_perHemi_' + str(
             modality) +
         '_181participants',
-        format="svg")
-    plt.show()
+        format="pdf")
+    return plt.show()
