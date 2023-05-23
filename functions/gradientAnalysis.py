@@ -232,8 +232,11 @@ def fieldSign(subject_id, path, dorsal_only=True, smoothing = False, save = Fals
 
 if __name__ == '__main__':
     subjects = [397760, 926862, 105923, 114823, 198653, 789373] # Figure 7
-    # subjects = [585256]
+    subjects = [249947, 525541, 169747, 826353, 192641, 126426, 401422, 177140, 135124, 130114] # Supplementary Figure 11
+    # with open('./../list_subj.txt') as fp:
+    #     subjects = fp.read().split("\n")
+    # subjects = np.array(subjects[0:len(subjects) - 1])
     for subject_id in subjects:
         path = './../data'
         PA_gradients(subject_id, path, plot_type = 'streamplot', dorsal_only = False, save=True, save_path = './../figures')
-        fieldSign(subject_id, path, save=True, dorsal_only=False, smoothing=True, save_path = './../figures')
+        fieldSign(subject_id, path, save=True, dorsal_only=False,  save_path = './../figures')
