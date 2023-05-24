@@ -4,11 +4,12 @@ import os.path as osp
 import sys
 
 sys.path.append('..')
-from functions.def_ROIs_DorsalEarlyVisualCortex import roi
-from functions.def_ROIs_EarlyVisualAreas import roi as ROI
-from nilearn import plotting
 
-def polarAngle_plot(subject_id, path, cluster, binarize = False):
+from nilearn import plotting
+from functions.def_ROIs_EarlyVisualAreas import roi as ROI
+from functions.def_ROIs_DorsalEarlyVisualCortex import roi
+
+def polarAngle_plot(subject_id, path, cluster, binarize=False):
     """
     Plot the polar angle map of the early visual cortex.
     Parameters
@@ -17,7 +18,7 @@ def polarAngle_plot(subject_id, path, cluster, binarize = False):
         Subject ID.
     path : str  
         Path to the data.
-    cluster : str
+    cluster : int
         cluster index.
     binarize : bool, optional
         Binarize the polar angle map. The default is False.
@@ -56,7 +57,7 @@ def polarAngle_plot(subject_id, path, cluster, binarize = False):
     mask_LH[mask_LH != 2] = 0
     mask_LH[mask_LH == 2] = 1
     mask_LH = mask_LH[final_mask_L_ROI == 1]
-    final_mask_L_ROI[final_mask_L_ROI==1]=mask_LH
+    final_mask_L_ROI[final_mask_L_ROI == 1] = mask_LH
 
     # Number of nodes
     number_cortical_nodes = int(64984)
@@ -64,7 +65,8 @@ def polarAngle_plot(subject_id, path, cluster, binarize = False):
 
     # Loading the data
     polarAngle = np.zeros((32492, 1))
-    data = np.load('./../output/cluster_'+ str(cluster) +'_PAmaps_weightedJaccard_eccentricityMask.npz')['list']
+    data = np.load('./../output/cluster_' + str(cluster) +
+                   '_PAmaps_weightedJaccard_eccentricityMask.npz')['list']
     polarAngle[final_mask_L_ROI == 1] = np.reshape(
         data, (-1, 1))
 
@@ -81,9 +83,9 @@ def polarAngle_plot(subject_id, path, cluster, binarize = False):
     polarAngle[final_mask_L != 1] = 0
 
     # Binarizing reshifted values
-    if binarize==True:
+    if binarize == True:
         polarAngle[(polarAngle >= 0) & (polarAngle <= 45)] = 0 + threshold
-        polarAngle[(polarAngle > 45) & (polarAngle <= 180)]= 90 + threshold
+        polarAngle[(polarAngle > 45) & (polarAngle <= 180)] = 90 + threshold
         polarAngle[(polarAngle >= 315) & (polarAngle <= 360)] = 360 + threshold
         polarAngle[(polarAngle > 180) & (polarAngle < 315)] = 270 + threshold
         polarAngle[final_mask_L != 1] = 0
@@ -91,15 +93,16 @@ def polarAngle_plot(subject_id, path, cluster, binarize = False):
     # Plotting
     view = plotting.view_surf(
         surf_mesh=osp.join(osp.dirname(osp.realpath(__file__)), '../data'
-                '/S1200_7T_Retinotopy181.L.sphere.32k_fs_LR.surf.gii'),
+                           '/S1200_7T_Retinotopy181.L.sphere.32k_fs_LR.surf.gii'),
         surf_map=np.reshape(polarAngle[0:32492], (-1)), bg_map=background,
         cmap='gist_rainbow_r', black_bg=False, symmetric_cmap=False,
         threshold=threshold, vmax=361)
     return view.open_in_browser()
 
-if __name__ == '__main__':
-    curv_background_subject = '111312'
-    hemisphere = 'left'
 
-    for i in range(7):
-        polarAngle_plot(curv_background_subject, './../data/',cluster = i, binarize = True)
+if __name__ == '__main__':
+    curv_background_subject = '111312'  # background only
+
+    for i in range(6):
+        polarAngle_plot(curv_background_subject, './../data/',
+                        cluster=i, binarize=False)

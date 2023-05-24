@@ -4,9 +4,10 @@ import os.path as osp
 import sys
 
 sys.path.append('..')
-from functions.def_ROIs_DorsalEarlyVisualCortex import roi
-from functions.def_ROIs_EarlyVisualAreas import roi as ROI
+
 from nilearn import plotting
+from functions.def_ROIs_EarlyVisualAreas import roi as ROI
+from functions.def_ROIs_DorsalEarlyVisualCortex import roi
 
 def topographic_map_plot(subject_id, path, modality, hemisphere, cluster):
     """
@@ -52,7 +53,8 @@ def topographic_map_plot(subject_id, path, modality, hemisphere, cluster):
 
     # Loading the data
     topographic_map = np.zeros((32492, 1))
-    data = np.load('./../output/mean' + modality + '_PAclustering_cluster' + str(cluster) + '_' + hemisphere + '.npz')['list']
+    data = np.load('./../output/mean' + modality + '_PAclustering_cluster' +
+                   str(cluster) + '_' + hemisphere + '.npz')['list']
     if hemisphere == 'LH':
         topographic_map[final_mask_L_ROI == 1] = np.reshape(
             data, (-1, 1))
@@ -65,9 +67,11 @@ def topographic_map_plot(subject_id, path, modality, hemisphere, cluster):
             topographic_map[minus] = topographic_map[minus] - 180 + threshold
             topographic_map[sum] = topographic_map[sum] + 180 + threshold
         elif modality == 'eccentricity':
-            topographic_map[final_mask_L_ROI == 1] = topographic_map[final_mask_L_ROI == 1] + threshold
+            topographic_map[final_mask_L_ROI ==
+                            1] = topographic_map[final_mask_L_ROI == 1] + threshold
         elif modality == 'meanbold':
-            topographic_map[final_mask_L_ROI == 1] = topographic_map[final_mask_L_ROI == 1] + threshold
+            topographic_map[final_mask_L_ROI ==
+                            1] = topographic_map[final_mask_L_ROI == 1] + threshold
             # print(np.min(topographic_map[final_mask_L_ROI == 1]))
         topographic_map[final_mask_L_ROI != 1] = 0
 
@@ -83,7 +87,7 @@ def topographic_map_plot(subject_id, path, modality, hemisphere, cluster):
 
         view = plotting.view_surf(
             surf_mesh=osp.join(osp.dirname(osp.realpath(__file__)), '../data'
-                    '/S1200_7T_Retinotopy181.L.sphere.32k_fs_LR.surf.gii'),
+                               '/S1200_7T_Retinotopy181.L.sphere.32k_fs_LR.surf.gii'),
             surf_map=np.reshape(topographic_map[0:32492], (-1)), bg_map=background,
             cmap=cmap, black_bg=False, symmetric_cmap=False,
             threshold=threshold, vmax=vmax)
@@ -94,15 +98,17 @@ def topographic_map_plot(subject_id, path, modality, hemisphere, cluster):
 
         # Masking and shifting
         topographic_map = np.array(topographic_map)
-        if modality == 'polarAngle': 
+        if modality == 'polarAngle':
             minus = topographic_map > 180
             sum = topographic_map < 180
             topographic_map[minus] = topographic_map[minus] - 180 + threshold
             topographic_map[sum] = topographic_map[sum] + 180 + threshold
         elif modality == 'eccentricity':
-            topographic_map[final_mask_L_ROI == 1] = topographic_map[final_mask_L_ROI == 1] + threshold
+            topographic_map[final_mask_L_ROI ==
+                            1] = topographic_map[final_mask_L_ROI == 1] + threshold
         elif modality == 'meanbold':
-            topographic_map[final_mask_L_ROI == 1] = topographic_map[final_mask_L_ROI == 1] + threshold
+            topographic_map[final_mask_L_ROI ==
+                            1] = topographic_map[final_mask_L_ROI == 1] + threshold
         topographic_map[final_mask_L_ROI != 1] = 0
         topographic_map[final_mask_R_ROI != 1] = 0
 
@@ -118,16 +124,18 @@ def topographic_map_plot(subject_id, path, modality, hemisphere, cluster):
 
         view = plotting.view_surf(
             surf_mesh=osp.join(osp.dirname(osp.realpath(__file__)), '../data'
-                    '/S1200_7T_Retinotopy181.R.sphere.32k_fs_LR.surf.gii'),
+                               '/S1200_7T_Retinotopy181.R.sphere.32k_fs_LR.surf.gii'),
             surf_map=np.reshape(topographic_map[0:32492], (-1)), bg_map=background,
             cmap=cmap, black_bg=False, symmetric_cmap=False,
             threshold=threshold, vmax=vmax)
         return view.open_in_browser()
+
 
 if __name__ == '__main__':
     curv_background_subject = '111312'
     hemisphere = 'LH'
     modality = 'polarAngle'
 
-    for i in range(1,7):
-        topographic_map_plot(curv_background_subject, './../data/', modality, hemisphere, cluster = i)
+    for i in range(1, 7):
+        topographic_map_plot(curv_background_subject,
+                             './../data/', modality, hemisphere, cluster=i)

@@ -4,11 +4,12 @@ import os.path as osp
 import sys
 
 sys.path.append('..')
-from functions.def_ROIs_DorsalEarlyVisualCortex import roi
-from functions.def_ROIs_EarlyVisualAreas import roi as ROI
-from nilearn import plotting
 
-def eccentricity_plot(subject_id, path, cluster, binarize = False):
+from nilearn import plotting
+from functions.def_ROIs_EarlyVisualAreas import roi as ROI
+from functions.def_ROIs_DorsalEarlyVisualCortex import roi
+
+def eccentricity_plot(subject_id, path, cluster, binarize=False):
     """
     Plot the eccentricity map of the early visual cortex.
     Parameters
@@ -17,7 +18,7 @@ def eccentricity_plot(subject_id, path, cluster, binarize = False):
         Subject ID.
     path : str
         Path to the data.
-    cluster : str
+    cluster : int
         cluster index.
     binarize : bool, optional
         Binarize the eccentricity map. The default is False.
@@ -31,7 +32,7 @@ def eccentricity_plot(subject_id, path, cluster, binarize = False):
         'cifti_curv']
     background = np.reshape(
         curv['x' + subject_id + '_curvature'][0][0][0:32492], (-1))
-    
+
     # Background settings
     threshold = 1  # threshold for the curvature map
     nocurv = np.isnan(background)
@@ -57,12 +58,12 @@ def eccentricity_plot(subject_id, path, cluster, binarize = False):
     mask_LH[mask_LH != 2] = 0
     mask_LH[mask_LH == 2] = 1
     mask_LH = mask_LH[final_mask_L_ROI == 1]
-    final_mask_L_ROI[final_mask_L_ROI==1]=mask_LH
-    
+    final_mask_L_ROI[final_mask_L_ROI == 1] = mask_LH
 
     # Loading the data
     eccentricity = np.zeros((32492, 1))
-    data = np.load('./../output/cluster_'+ str(cluster) +'_eccMaps_weightedJaccard_eccentricityMask.npz')['list']
+    data = np.load('./../output/cluster_' + str(cluster) +
+                   '_eccMaps_weightedJaccard_eccentricityMask.npz')['list']
 
     # Masking
     eccentricity[final_mask_L_ROI == 1] = np.reshape(
@@ -71,7 +72,7 @@ def eccentricity_plot(subject_id, path, cluster, binarize = False):
     eccentricity[final_mask_L_dorsal != 1] = 0
 
     # Binarizing
-    if binarize==True:
+    if binarize == True:
         eccentricity[(eccentricity >= 0) & (eccentricity <= 2)] = 0 + threshold
         eccentricity[(eccentricity > 2) & (eccentricity <= 4)] = 2 + threshold
         eccentricity[(eccentricity > 4) & (eccentricity <= 6)] = 4 + threshold
@@ -81,13 +82,15 @@ def eccentricity_plot(subject_id, path, cluster, binarize = False):
     # Plotting
     view = plotting.view_surf(
         surf_mesh=osp.join(osp.dirname(osp.realpath(__file__)), '../data'
-                '/S1200_7T_Retinotopy181.L.sphere.32k_fs_LR.surf.gii'),
+                           '/S1200_7T_Retinotopy181.L.sphere.32k_fs_LR.surf.gii'),
         surf_map=np.reshape(eccentricity[0:32492], (-1)), bg_map=background,
         cmap='gist_rainbow_r', black_bg=False, symmetric_cmap=False,
         threshold=threshold, vmax=8)
     return view.open_in_browser()
 
+
 if __name__ == '__main__':
-    curv_background_subject = '111312'
-    for i in range(7):
-        eccentricity_plot(curv_background_subject, './../data/', cluster = i)
+    curv_background_subject = '111312'  # background only
+
+    for i in range(6):
+        eccentricity_plot(curv_background_subject, './../data/', cluster=i)
