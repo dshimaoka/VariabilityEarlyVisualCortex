@@ -453,12 +453,12 @@ def difference_plots(modality, differences_dorsal_final,
     sns.despine()
 
     # Create an output folder if it doesn't already exist
-    directory = './../output/lme'
+    directory = './../figures/other'
     if not osp.exists(directory):
         os.makedirs(directory)
 
-    plt.savefig('./../output/lme/MeanDifFromTheMean_combined_' + str(modality) +
-                '_181participants', format="pdf")
+    plt.savefig('./../figures/other/MeanDifFromTheMean_combined_' + str(modality) +
+                '_181participants.pdf', format="pdf")
     plt.show()
     df = pd.concat([df_1, df_2])
     return df
@@ -533,13 +533,11 @@ def intraIndividual_difference_plots(modality, differences_dorsal_final,
     sns.despine()
 
     # Create an output folder if it doesn't already exist
-    directory = './../output/lme'
+    directory = './../figures/other'
     if not osp.exists(directory):
         os.makedirs(directory)
 
-    # plt.savefig('./../output/lme/IntraIndividual_MeanDifFit2vsFit3_combined_'
-    # + str(modality) +
-    #             '_181participants', format="pdf")
+    plt.savefig('./../figures/other/IntraIndividual_MeanDifFit2vsFit3_combined_' + str(modality) + '_181participants.pdf', format="pdf")
     plt.show()
     df = pd.concat([df_1, df_2])
     return df
@@ -601,13 +599,13 @@ def difference_plots_sameHemi(data, modality):
     sns.despine()
 
     # Create an output folder if it doesn't already exist
-    directory = './../output/lme'
+    directory = './../figures/figure2'
     if not osp.exists(directory):
         os.makedirs(directory)
 
     plt.savefig(
-        './../output/lme/MeanDifFromTheMean_perHemi_' + str(modality) +
-        '_181participants',
+        './../figures/figure2/MeanDifFromTheMean_perHemi_' + str(modality) +
+        '_181participants.pdf',
         format="pdf")
     return plt.show()
 
@@ -657,13 +655,13 @@ def intraIndividual_difference_plots_sameHemi(data, modality):
     sns.despine()
 
     # Create an output folder if it doesn't already exist
-    directory = './../output/lme'
+    directory = './../figures/supplementary_figure1'
     if not osp.exists(directory):
         os.makedirs(directory)
 
     plt.savefig(
-        './../output/lme/IntraIndividual_MeanDifFit2vsFit3_perHemi_' + str(
+        './.././../figures/supplementary_figure1/IntraIndividual_MeanDifFit2vsFit3_perHemi_' + str(
             modality) +
-        '_181participants',
+        '_181participants.pdf',
         format="pdf")
     return plt.show()

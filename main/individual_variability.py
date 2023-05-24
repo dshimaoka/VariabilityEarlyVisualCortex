@@ -1,3 +1,6 @@
+from functions.individual_variability import difference_plots_sameHemi
+from functions.individual_variability import difference_plots
+from functions.individual_variability import difference_score
 import numpy as np
 import sys
 import os
@@ -5,16 +8,13 @@ import os.path as osp
 
 sys.path.append('..')
 
-from functions.individual_variability import difference_score
-from functions.individual_variability import difference_plots
-from functions.individual_variability import difference_plots_sameHemi
 
 # All individuals
 with open('./../list_subj.txt') as fp:
     subjects = fp.read().split("\n")
 list_of_ind = subjects[0:len(subjects) - 1]
 
-modalities = ['polarAngle', 'eccentricity','curvature', 'meanbold',]
+modalities = ['polarAngle', 'eccentricity', 'curvature', 'meanbold',]
 for modality in modalities:
 
     # Dorsal areas
@@ -58,14 +58,18 @@ for modality in modalities:
         differences_ventral.append(differences_ventral_temp)
 
     differences_ventral_final = np.concatenate(differences_ventral, axis=1)
-    data = difference_plots(modality, differences_dorsal_final, differences_ventral_final)
-    
+    data = difference_plots(
+        modality, differences_dorsal_final, differences_ventral_final)
+
     # Create an output folder if it doesn't already exist
     directory = './../output/lme'
     if not osp.exists(directory):
         os.makedirs(directory)
 
-
-    data.to_pickle('./../output/lme/longFormat_' + modality + '_MSMall_all.pkl')
-    data.to_excel('./../output/lme/longFormat_' + modality + '_MSMall_all.xlsx')
+    data.to_pickle('./../output/lme/longFormat_' +
+                   modality + '_MSMall_all.pkl')
+    data.to_excel('./../output/lme/longFormat_' +
+                  modality + '_MSMall_all.xlsx')
+    print('Saved long format data for ' + modality +
+          ' in output/lme/longFormat_' + modality + '_MSMall_all.xlsx')
     difference_plots_sameHemi(data, modality,)

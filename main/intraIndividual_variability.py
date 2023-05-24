@@ -1,4 +1,3 @@
-#%%
 import numpy as np
 import sys
 
@@ -9,7 +8,7 @@ from functions.individual_variability import intraIndividual_difference_plots
 from functions.individual_variability import intraIndividual_difference_plots_sameHemi
 
 # All individuals
-with open('./../list_subj') as fp:
+with open('./../list_subj.txt') as fp:
     subjects = fp.read().split("\n")
 list_of_ind = subjects[0:len(subjects) - 1]
 
@@ -62,5 +61,3 @@ for modality in modalities:
     data.to_pickle('./../output/lme/intraSubj_longFormat_' + modality + '_all.pkl')
     data.to_excel('./../output/lme/intraSubj_longFormat_' + modality + '_all.xlsx')
     intraIndividual_difference_plots_sameHemi(data, modality,)
-
-# %%

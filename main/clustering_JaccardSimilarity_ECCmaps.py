@@ -15,6 +15,7 @@ from sklearn.cluster import SpectralClustering
 from functions.individual_variability import grab_data
 from scipy.spatial import distance
 
+### Jaccard similarity matrix ###
 # All individuals
 with open('./../list_subj') as fp:
     subjects = fp.read().split("\n")
@@ -45,7 +46,6 @@ dataset_orig = []
 for i in list:
     data = grab_data('eccentricity', i, final_mask_L_ROI, 'LH')
     dataset_orig.append(data[final_mask_L[final_mask_L_ROI == 1] == 1])
-    # dataset_orig.append(data[mask_LH == 1])
 
     # Binarizing
     data[(data >= 0) & (data <= 2)] = 0
@@ -56,11 +56,6 @@ for i in list:
     data = data[mask_LH == 1]
     dataset_segmented.append(data)
 
-# # Check
-# for i in range(181):
-#     print(np.unique(dataset_segmented[i]))
-
-#### Similarity metrics ####
 # Jaccard similarity
 jaccard_matrix = np.zeros((181, 181))
 for i in range(181):
@@ -85,7 +80,7 @@ clustering = SpectralClustering(n_clusters=n_cluster,
                                 random_state=123,
                                 affinity='precomputed').fit_predict(
     jaccard_matrix)
-np.savez('./../output/clusters_individualIndeces_ecc.npz', list = clustering)
+np.savez('./../output/clusters_individualIndeces_ecc.npz', list=clustering)
 
 # Cluster means
 dataset_orig = np.reshape(dataset_orig, np.shape(dataset_orig)[:-1])
@@ -106,14 +101,14 @@ for i in range(n_cluster):
         for k in indeces:
             cluster_matrix[j][k] = cluster_matrix[j][k] * (i + 2)
 
-# Average within cluster
-off_diagonal_triu = np.triu(cluster_matrix, k=1)
-mean_within = np.mean(jaccard_matrix[off_diagonal_triu > 1])
-sd_within = np.std(jaccard_matrix[off_diagonal_triu > 1])
+# # Average within cluster
+# off_diagonal_triu = np.triu(cluster_matrix, k=1)
+# mean_within = np.mean(jaccard_matrix[off_diagonal_triu > 1])
+# sd_within = np.std(jaccard_matrix[off_diagonal_triu > 1])
 
-# Average between cluster
-mean_between = np.mean(jaccard_matrix[off_diagonal_triu == 1])
-sd_between = np.std(jaccard_matrix[off_diagonal_triu == 1])
+# # Average between cluster
+# mean_between = np.mean(jaccard_matrix[off_diagonal_triu == 1])
+# sd_between = np.std(jaccard_matrix[off_diagonal_triu == 1])
 
 # Plot of ordered jaccard matrix
 sns.heatmap(jaccard_matrix[ordering].T[ordering].T, cmap="flare_r")
