@@ -1,6 +1,3 @@
-from functions.individual_variability import difference_plots_sameHemi
-from functions.individual_variability import difference_plots
-from functions.individual_variability import difference_score
 import numpy as np
 import sys
 import os
@@ -8,6 +5,9 @@ import os.path as osp
 
 sys.path.append('..')
 
+from functions.individual_variability import difference_plots_sameHemi
+from functions.individual_variability import difference_plots
+from functions.individual_variability import difference_score
 
 # All individuals
 with open('./../list_subj.txt') as fp:

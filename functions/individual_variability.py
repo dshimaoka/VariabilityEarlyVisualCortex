@@ -32,17 +32,10 @@ def grab_data(modality, subject_ID, roi_mask, hemisphere):
     number_cortical_nodes = int(64984)
     number_hemi_nodes = int(number_cortical_nodes / 2)
 
-    if modality == 'curvature':
-        data = \
-            scipy.io.loadmat(
-                osp.join(path, 'cifti_' + str(modality) + '_all.mat'))[
-                'cifti_curv']
-
-    else:
-        data = \
-            scipy.io.loadmat(
-                osp.join(path, 'cifti_' + str(modality) + '_all.mat'))[
-                'cifti_' + str(modality)]
+    data = \
+        scipy.io.loadmat(
+            osp.join(path, 'cifti_' + str(modality) + '_all.mat'))[
+            'cifti_' + str(modality)]
 
     if hemisphere == 'LH':
         # anatomical maps
@@ -660,7 +653,7 @@ def intraIndividual_difference_plots_sameHemi(data, modality):
         os.makedirs(directory)
 
     plt.savefig(
-        './.././../figures/supplementary_figure1/IntraIndividual_MeanDifFit2vsFit3_perHemi_' + str(
+        './../figures/supplementary_figure1/IntraIndividual_MeanDifFit2vsFit3_perHemi_' + str(
             modality) +
         '_181participants.pdf',
         format="pdf")

@@ -28,7 +28,7 @@ def polarAngle_plot(subject_id, path, cluster, binarize=False):
     """
     # Loading the curvature map
     curv = scipy.io.loadmat(osp.join(path, 'cifti_curvature_all.mat'))[
-        'cifti_curv']
+        'cifti_curvature']
     background = np.reshape(
         curv['x' + subject_id + '_curvature'][0][0][0:32492], (-1))
 

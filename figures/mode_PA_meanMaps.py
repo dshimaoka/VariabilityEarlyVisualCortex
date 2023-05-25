@@ -32,7 +32,7 @@ def topographic_map_plot(subject_id, path, modality, hemisphere, cluster):
 
     # Loading the curvature topographic_map
     curv = scipy.io.loadmat(osp.join(path, 'cifti_curvature_all.mat'))[
-        'cifti_curv']
+        'cifti_curvature']
     background = np.reshape(
         curv['x' + subject_id + '_curvature'][0][0][0:32492], (-1))
 
