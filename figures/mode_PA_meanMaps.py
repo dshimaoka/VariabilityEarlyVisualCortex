@@ -2,6 +2,7 @@ import numpy as np
 import scipy.io
 import os.path as osp
 import sys
+import argparse
 
 sys.path.append('..')
 
@@ -113,11 +114,12 @@ def topographic_map_plot(subject_id, path, modality, hemisphere, cluster):
         topographic_map[final_mask_R_ROI != 1] = 0
 
         # Plotting
-        cmap = 'gist_rainbow_r'
+        cmap = 'gist_rainbow'
         if modality == 'polarAngle':
             vmax = 360 + threshold
         elif modality == 'eccentricity':
             vmax = 8 + threshold
+            cmap = 'gist_rainbow_r'
         elif modality == 'meanbold':
             vmax = 1.8
             cmap = 'gist_heat'
@@ -132,10 +134,13 @@ def topographic_map_plot(subject_id, path, modality, hemisphere, cluster):
 
 
 if __name__ == '__main__':
-    curv_background_subject = '111312'
-    hemisphere = 'LH'
-    modality = 'polarAngle'
+    curv_background_subject = '111312' # background only
+   
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--hemisphere', type=str, default='LH')
+    parser.add_argument('--modality', type=str, default='polarAngle')
+    args = parser.parse_args()
 
     for i in range(1, 7):
         topographic_map_plot(curv_background_subject,
-                             './../data/', modality, hemisphere, cluster=i)
+                             './../data/', args.modality, args.hemisphere, cluster=i)

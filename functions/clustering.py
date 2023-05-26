@@ -1,5 +1,3 @@
-from functions.individual_variability import grab_data
-from functions.def_ROIs_EarlyVisualAreas import roi
 import numpy as np
 import sys
 import seaborn as sns
@@ -9,6 +7,8 @@ import os.path as osp
 
 sys.path.append('..')
 
+from functions.individual_variability import grab_data
+from functions.def_ROIs_EarlyVisualAreas import roi
 
 def color_pal(cluster):
     palette_tmp = sns.color_palette("PRGn_r")
@@ -78,6 +78,7 @@ def ridgeline_plot(data):
 
     g.savefig(directory + '/figure6.pdf', dpi=500, bbox_inches='tight',
               pad_inches=0.5)
+    g.savefig(directory + '/figure6.png')
     plt.show()
 
 

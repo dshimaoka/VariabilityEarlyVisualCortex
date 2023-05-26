@@ -2,6 +2,7 @@ import numpy as np
 import scipy.io
 import os.path as osp
 import sys
+import argparse
 
 sys.path.append('..')
 
@@ -103,6 +104,10 @@ def polarAngle_plot(subject_id, path, cluster, binarize=False):
 if __name__ == '__main__':
     curv_background_subject = '111312'  # background only
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--binarize', type=bool, default=False)
+    args = parser.parse_args()
+
     for i in range(6):
         polarAngle_plot(curv_background_subject, './../data/',
-                        cluster=i, binarize=False)
+                        cluster=i, binarize=args.binarize)

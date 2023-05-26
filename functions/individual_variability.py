@@ -452,6 +452,8 @@ def difference_plots(modality, differences_dorsal_final,
 
     plt.savefig('./../figures/other/MeanDifFromTheMean_combined_' + str(modality) +
                 '_181participants.pdf', format="pdf")
+    plt.savefig('./../figures/other/MeanDifFromTheMean_combined_' + str(modality) +
+                '_181participants.png', format="png")
     plt.show()
     df = pd.concat([df_1, df_2])
     return df
@@ -530,7 +532,10 @@ def intraIndividual_difference_plots(modality, differences_dorsal_final,
     if not osp.exists(directory):
         os.makedirs(directory)
 
-    plt.savefig('./../figures/other/IntraIndividual_MeanDifFit2vsFit3_combined_' + str(modality) + '_181participants.pdf', format="pdf")
+    plt.savefig('./../figures/other/IntraIndividual_MeanDifFit2vsFit3_' +
+                'combined_' + str(modality) + '_181participants.pdf', format="pdf")
+    plt.savefig('./../figures/other/IntraIndividual_MeanDifFit2vsFit3_' +
+                'combined_' + str(modality) + '_181participants.png', format="png")
     plt.show()
     df = pd.concat([df_1, df_2])
     return df
@@ -600,6 +605,10 @@ def difference_plots_sameHemi(data, modality):
         './../figures/figure2/MeanDifFromTheMean_perHemi_' + str(modality) +
         '_181participants.pdf',
         format="pdf")
+    plt.savefig(
+        './../figures/figure2/MeanDifFromTheMean_perHemi_' + str(modality) +
+        '_181participants.png',
+        format="png")
     return plt.show()
 
 
@@ -657,4 +666,9 @@ def intraIndividual_difference_plots_sameHemi(data, modality):
             modality) +
         '_181participants.pdf',
         format="pdf")
+    plt.savefig(
+        './../figures/supplementary_figure1/IntraIndividual_MeanDifFit2vsFit3_perHemi_' + str(
+            modality) +
+        '_181participants.png',
+        format="png")
     return plt.show()

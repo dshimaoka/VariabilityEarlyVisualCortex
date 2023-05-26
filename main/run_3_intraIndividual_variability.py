@@ -58,6 +58,6 @@ for modality in modalities:
     differences_ventral_final = np.concatenate(differences_ventral, axis=1)
 
     data = intraIndividual_difference_plots(modality, differences_dorsal_final, differences_ventral_final)
-    data.to_pickle('./../output/lme/intraSubj_longFormat_' + modality + '_all.pkl')
+    data.to_csv('./../output/lme/intraSubj_longFormat_' + modality + '_all.csv')
     data.to_excel('./../output/lme/intraSubj_longFormat_' + modality + '_all.xlsx')
     intraIndividual_difference_plots_sameHemi(data, modality,)

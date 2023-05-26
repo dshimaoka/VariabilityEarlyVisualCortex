@@ -66,10 +66,10 @@ for modality in modalities:
     if not osp.exists(directory):
         os.makedirs(directory)
 
-    data.to_pickle('./../output/lme/longFormat_' +
-                   modality + '_MSMall_all.pkl')
+    data.to_csv('./../output/lme/longFormat_' +
+                   modality + '_MSMall_all.csv')
     data.to_excel('./../output/lme/longFormat_' +
                   modality + '_MSMall_all.xlsx')
     print('Saved long format data for ' + modality +
-          ' in output/lme/longFormat_' + modality + '_MSMall_all.xlsx')
+          ' in ./../output/lme/longFormat_' + modality + '_MSMall_all.xlsx')
     difference_plots_sameHemi(data, modality,)

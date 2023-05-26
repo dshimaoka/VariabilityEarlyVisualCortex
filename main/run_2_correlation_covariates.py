@@ -87,6 +87,8 @@ def correlation_cov(hemisphere):
                 mask=mask, square=True, cmap="PuOr", vmin=-.5, vmax=.5)
     plt.savefig(
         './../figures/figure3/correlationNonNeuralVariables_' + hemisphere + '_V1-3_181participants.pdf', format="pdf")
+    plt.savefig(
+        './../figures/figure3/correlationNonNeuralVariables_' + hemisphere + '_V1-3_181participants.png', format="png")
     print('Correlation matrix "correlationNonNeuralVariables_' + hemisphere + '_V1-3_181participants.pdf" plot ' +
           'saved in ./../figures/figure3')
     print('_____________________________________________________________')
@@ -158,6 +160,8 @@ def correlation_cov(hemisphere):
                     cmap="PuOr", vmin=-.5, vmax=.5)
         plt.savefig('./../figures/figure3/correlationNonNeuralVariables_' + hemisphere + '_' + str(area) +
                     '_181participants.pdf', format="pdf")
+        plt.savefig('./../figures/figure3/correlationNonNeuralVariables_' + hemisphere + '_' + str(area) +
+                    '_181participants.png', format="png")
         print('Correlation matrix "correlationNonNeuralVariables_' + hemisphere + '_' + str(area) +
               '_181participants.pdf" saved in ./../output/figure3')
         print('_____________________________________________________________')

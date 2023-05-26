@@ -11,7 +11,7 @@ This repository contains all source code necessary to replicate our recent work 
 
 
 ## Visualization and Reproducibility
-For visualization and further analysis, we recommend using NeuroDesk[]:
+For visualization and further analysis, we recommend using [NeuroDesk](https://www.neurodesk.org/):
 
 1. Clone this repository (or a forked version of this repository):
 
@@ -33,33 +33,28 @@ This step is required to convert the "dscalar.nii" files to ".mat"
 ```   
 This bash script includes data preparation and conda environment creation with required packages.
 
-5. Finally, you can launch our Jupyter notebook by double-clicking on maps-visualization.ipynb on Jupyter lab:
+5. Finally, you can launch our Jupyter notebook by double-clicking on **maps-visualization.ipynb** at *./notebooks/* on Jupyter lab:
 
 
 ## Reproducibility of clusters
 
 Given that the updated version of nilearn (in which we modified a few plotting functionalities) requires an updated version of scikit-learn, and unfortunately, the random seeds differ, to reproduce the same clusters we report in our manuscript, you will have to create a different conda environment to run the clustering analyses.
 
- Create a conda environment;
+1. Create a conda environment;
 ```bash
     conda create -n VariabilityEarlyVisualCortex_clustering python=3.6
     conda activate VariabilityEarlyVisualCortex_clustering
 ```
-- Install the required packages that are available at requirements_clustering.txt: 
+2. Install the required packages that are available at requirements_clustering.txt: 
 
 ```bash
     pip install -r requirements_clustering.txt
 ```
-- Then, you may run: 
 
-```bash
-    cd ./main/
-    python clustering_JaccardSimilarity_PAmaps.py
-```
-
+3. To reproduce all our analyses, you may run our **manuscript-experiments.ipynb** Jupyter notebook at *./notebooks/*.
 ## Other resources
 
-#TODO
+Intermediate files for fitting the linear mixed effect models using Jamovi and the .omv files themselves are available on [OSF](https://osf.io/tdkuj/).
 
 ## Citation
 
