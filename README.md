@@ -19,7 +19,7 @@ For visualization and further analysis, we recommend using [NeuroDesk](https://w
     git clone https://github.com/felenitaribeiro/VariabilityEarlyVisualCortex.git
 ```   
 
-2. Download the available data at [Balsa](https://balsa.wustl.edu/study/9Zkk) following these steps: https://www.neurodesk.org/tutorials/functional_imaging/connectomeworkbench/ and extract to ./matlab
+2. Download the available data at [Balsa](https://balsa.wustl.edu/study/9Zkk) following these steps: https://www.neurodesk.org/tutorials/functional_imaging/connectomeworkbench/ and extract to *./matlab*
 
 Note that you only need the "Retinotopy_HCP_7T_181_Fit1.scene", "Retinotopy_HCP_7T_181_Fit2.scene", "Retinotopy_HCP_7T_181_Fit3.scene", and "Retinotopy_HCP_7T_181_fsaverage.scene" files.
 
