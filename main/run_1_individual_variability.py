@@ -3,7 +3,8 @@ import sys
 import os
 import os.path as osp
 
-sys.path.append('..')
+# sys.path.append('../')
+sys.path.append('/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/')
 
 from functions.individual_variability import difference_plots_sameHemi
 from functions.individual_variability import difference_plots
