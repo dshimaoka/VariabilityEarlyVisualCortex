@@ -4,7 +4,17 @@
 
 %% show 3D surface of the standard brain
 mid_gifti_L=gifti('S1200_7T_Retinotopy181.L.midthickness_MSMAll.32k_fs_LR.surf.gii');
+%faces: 64980x3
+%vertices 32492x3
 patch('Vertices',mid_gifti_L.vertices,'Faces',mid_gifti_L.faces, 'EdgeColor','interp','FaceColor','g');
+view(3)
+axis vis3d
+
+%% show 3D surface of the sphereical brain
+sphere_gifti_L=gifti('S1200_7T_Retinotopy181.L.sphere.32k_fs_LR.surf.gii');
+%faces: 64980x3
+%vertices 32492x3
+patch('Vertices',sphere_gifti_L.vertices,'Faces',sphere_gifti_L.faces, 'EdgeColor','interp','FaceColor','g');
 view(3)
 axis vis3d
 
