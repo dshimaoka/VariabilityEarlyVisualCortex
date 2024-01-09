@@ -37,7 +37,7 @@ import time
 np.random.seed(sweep_id)
 
 out_root_dir = "/tmp/";#"/home/earsenau/sz11_scratch/elasticnet/"
-tgt = "V+D"#"D"#"V+D"
+tgt = "D"#"D"#"V+D"
 
 ### learning parameters
 # the weights for the regularization terms
@@ -69,7 +69,6 @@ mazimuth = retinotopyData['mazimuth']
 arealBorders = scipy.io.loadmat(osp.join(loadDir, 'fieldSign_avg_smoothed_arealBorder'))
 
 shape2d = arealBorders['areaMatrix'][0][0].shape
-gridIdx = np.arange(0,shape2d[0]*shape2d[1])
 
 final_mask_L_idx = retinotopyData['final_mask_L_idx'].astype(int)[0]
 final_mask_L_d_idx = retinotopyData['final_mask_L_d_idx'].astype(int)[0]
@@ -83,7 +82,10 @@ mask_v2_sub = np.argwhere(arealBorders['areaMatrix'][0][1] == 1) #[y,x]
 mask_v1_idx = dst.sub2ind(shape2d, mask_v1_sub[:,0], mask_v1_sub[:,1]) #[v1 pixels x 1]
 mask_v2_idx = dst.sub2ind(shape2d, mask_v2_sub[:,0], mask_v2_sub[:,1])#[v2 pixels x 1]
 
-retinotopy = np.column_stack((mazimuth.ravel(order='F'), maltitude.ravel(order='F')))#[all pixels x 2]. 2nd argument is [azimuth altitude]
+#mask_v1_idx = np.nonzero((arealBorders['areaMatrix'][0][0]).flatten() == 1)[0] #identical to above
+
+
+retinotopy = np.column_stack((mazimuth.flatten().T, maltitude.flatten().T))#[all pixels x 2]. 2nd argument is [azimuth altitude]
 
 mask_v1_d_idx = np.intersect1d(mask_v1_idx, final_mask_L_d_idx)
 mask_v2_d_idx = np.intersect1d(mask_v2_idx, final_mask_L_d_idx)
@@ -197,10 +199,14 @@ reg1 = tf.reduce_sum(yy_normsq_masked)
 distance2D_tf_c = np.zeros((len(mask_var_idx),len(mask_fix_idx)))
 for i in range(0,len(mask_var_idx)):
     for j in range(0,len(mask_fix_idx)):
-        distance2D_tf_c[i,j] = distance2D[np.where(gridIdx == mask_var_idx[i])[0][0],
-                                np.where(gridIdx == mask_fix_idx[j])[0][0]]
+        distance2D_tf_c[i,j] = distance2D[np.where(final_mask_L_idx == mask_var_idx[i])[0][0],
+                                np.where(final_mask_L_idx == mask_fix_idx[j])[0][0]]
 
 distance2D_tf = tf.constant(distance2D_tf_c)
+
+# distance1D_tf_c = distance2D_tf_c.flatten();
+# distance1D_tf = tf.constant(distance1D_tf_c)
+
 
 
 src_idx = np.arange(0,len(mask_var_idx))
@@ -226,11 +232,10 @@ for qq in range(0,len(mask_fix_idx)):
     orig2d[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = retinotopy[mask_fix_idx[qq],:]
 #plt.imshow(orig2d[:,:,0].T, origin='lower'); plt.colorbar(); plt.title('azimuth')
 mask2d = ~np.isnan(orig2d[:,:,0])
-idx = 105
+idx = 100
 plt.imshow(np.multiply(mask2d.T, distance4D[mask_var_sub[idx,0],mask_var_sub[idx,1],:,:]), origin='lower')
 plt.plot(mask_var_sub[idx,1],mask_var_sub[idx,0],'rx')
 plt.plot(mask_fix_sub[min_indices[idx],1], mask_fix_sub[min_indices[idx],0],'ro')
-#plt.xlim([30, 90]);plt.ylim([20, 80])
 #distance4D looks all good
 #min_indices is something wrong for dorsal V2
 #, meaning something wrong at disatnce2D_tf  - something wrong when computing distance2D_tf from distance2D
@@ -238,7 +243,7 @@ plt.plot(mask_fix_sub[min_indices[idx],1], mask_fix_sub[min_indices[idx],0],'ro'
 
 
 ##FIXME: idex used in distance2D defined in matlab do NOT match idx defined in dstools
-distance2D_test = distance2D[np.where(gridIdx == mask_var_idx[idx])[0][0],final_mask_L_idx]
+distance2D_test = distance2D[np.where(final_mask_L_idx == mask_var_idx[idx])[0][0],:]
 
 distance2D_test2D = np.nan * np.ones((100,100))
 for iii in range(0,len(final_mask_L_idx)):

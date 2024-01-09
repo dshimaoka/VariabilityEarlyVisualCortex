@@ -15,12 +15,17 @@ figure;plot3(x,y,z,'.');xlabel('x');ylabel('y');zlabel('z');
 
 %% 1. import entire brain
 tic
-hmax = 2; %1: too slow, 3: too coarse
-mid_gifti_L=gifti('S1200_7T_Retinotopy181.L.midthickness_MSMAll.32k_fs_LR.surf.gii');
-stlwrite('Geom.stl', mid_gifti_L.faces, mid_gifti_L.vertices)
+type = 'white';
+hmax = 2; %1: fine but too slow, 3: too coarse
+%sdata=gifti('S1200_7T_Retinotopy181.L.midthickness_MSMAll.32k_fs_LR.surf.gii');
+%sdata = gifti('S1200_7T_Retinotopy181.L.pial_MSMAll.32k_fs_LR.surf.gii');
+sdata = gifti(['S1200_7T_Retinotopy181.L.' type '_MSMAll.32k_fs_LR.surf.gii']);
+stlwrite('Geom.stl', sdata.faces, sdata.vertices)
 model = createpde(1);
+%model = createpde('structural','static-solid');
 importGeometry(model,"Geom.stl"); %"BracketTwoHoles.stl");%
-generateMesh(model,"Hmax",hmax); %determines coarseness of the mesh
+%pdegplot(model)
+generateMesh(model,"Hmax",hmax);%"geometricOrder","linear"); %, "Hmin",0.3*mm); %determines coarseness of the mesh
 pdeplot3D(model)
 t1=toc
 
@@ -113,7 +118,7 @@ G = graph([sourcenode_all tgtnode_all], [tgtnode_all sourcenode_all], [distance_
 t3 = toc
 
 
-%% obtain nodes on the surface 
+%% obtain nodes on the surface ... its order is according to order of x ... completely random
 surfaceNodes = zeros(numel(x),1);
 for idx = 1:numel(x)
     [~,surfaceNodes(idx)] = min(abs(nodes(:,1) - x(idx)).^2 + abs(nodes(:,2) - y(idx)).^2 + abs(nodes(:,3) - z(idx)).^2);
@@ -149,7 +154,7 @@ hold off;
 
 %% compute all distance
 distance4D = nan(numel(yaxis), numel(xaxis), numel(yaxis), numel(xaxis));
-distance2D = nan(numel(surfaceNodes));
+%distance2D = nan(numel(surfaceNodes));
 for snode=1:numel(surfaceNodes_unq)
     disp(snode)
     [~, distance_all_unq] = shortestpathtree(G, surfaceNodes_unq(snode), surfaceNodes_unq);%'OutputForm','cell');
@@ -168,59 +173,95 @@ for snode=1:numel(surfaceNodes_unq)
         for tnode=1:numel(surfaceNodes)
             distance4D(sy,sx,ty(tnode),tx(tnode)) = distance_all(tnode);
         end
-        distance2D(snodes(ss),:) = distance_all;
+        %distance2D(snodes(ss),:) = distance_all;
     end
     % imagesc(squeeze(distance4D(sy,sx,:,:))); hold on; plot(sx,sy,'ro')
 end
+distance2D = reshape(distance4D, numel(yaxis)*numel(xaxis), numel(yaxis)*numel(xaxis));
 
-save(['minimal_path_hmax' num2str(hmax)],'distance4D','distance2D','xy2node','surfaceNodes');%,'G','-v7.3');
+save(['minimal_path_' type '_hmax' num2str(hmax) ],'distance4D','distance2D','xy2node','surfaceNodes');%,'G','-v7.3');
 
-%% show surface and shortest path distance
-xidx = 54; yidx = 63; %61
+%% sanity check
+load('/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/results/fieldSign_avg_smoothed_arealBorder.mat')
+roi = (areaMatrix{1}+areaMatrix{2}+areaMatrix{3})>0;
 
-figure('position',[0 0 1900 1000]);
-
-subplot(122);
-imagesc(xaxis, yaxis, squeeze(distance4D(yidx,xidx,:,:)));hold on;
-scatter(xaxis(xidx), yaxis(yidx), 50, 'filled', 'MarkerFaceColor', 'r');
-xlabel('x'); ylabel('y');
-title('shortest path distance');        
-colorbar;
-axis equal tight xy;
-clim([0 20])
-
-subplot(1,2,1);
-trisurf(faces, vertices(:,1), vertices(:,2), vertices(:,3), 'FaceColor', 'c', 'EdgeColor', 'k'); hold on;
-%scatter3(vertices(find(mask), 1), vertices(find(mask), 2), vertices(find(mask), 3), 10, 'b', 'filled');
-scatter3(x,y,z,2,'w.');
-scatter3(vertices(xy2node(yidx,xidx), 1), vertices(xy2node(yidx,xidx), 2), vertices(xy2node(yidx,xidx), 3), 50, 'r', 'filled');
-xlabel('x'); ylabel('y');
-%view(20, -30);
-title('surface');
-axis equal tight off;
-
-% Set the range of rotation angles
-angles = -90:2:90;  % Change the increment (5 degrees) as needed
-
-% Initialize GIF file
-filename = 'rotating_3d_figure.gif';
-
-% Loop through each angle and capture frame for the GIF
-for i = 1:length(angles)
-    view([angles(i), 0]);  
+for ii = 1:6
+    %sy = 80+1;sx=20+1;
+    sy = 25+3*ii;sx=70+1;
+    distance4D_tmp = squeeze(distance4D(sy,sx,:,:));
+    maskV1 = areaMatrix{1}.*1;
+    maskV1(maskV1==0)=nan;
+    maskV2 = areaMatrix{2}.*1;
+    maskV2(maskV2==0)=nan;
+    distanceV1 = distance4D_tmp .* maskV1;
+    %option1: minimum
+    [~,minidx] = nanmin(distanceV1(:),[],1);
+    [ty,tx] = ind2sub([size(distance4D,1) size(distance4D,2)], minidx);
+    %option2: CoM
+    distanceV1_c = 1./exp(distanceV1);
+    distanceV1_c(isnan(distanceV1_c)) = 0;
+    props = regionprops(true(size(distanceV1_c)), distanceV1_c, 'WeightedCentroid');
+    ty1c = props.WeightedCentroid(2); tx1c = props.WeightedCentroid(1);
     
-    % Capture the current figure as an image
-    frame = getframe(gcf);
-    im = frame2im(frame);
-    [imind, cm] = rgb2ind(im, 256);
-    
-    % Write to the GIF File
-    if i == 1
-        imwrite(imind, cm, filename, 'gif', 'Loopcount', inf, 'DelayTime', 0.1);
-    else
-        imwrite(imind, cm, filename, 'gif', 'WriteMode', 'append', 'DelayTime', 0.1);
-    end
+    distanceV2 = distance4D_tmp .* maskV2;
+    [~,minidx] = nanmin(distanceV2(:),[],1);
+    [ty2,tx2] = ind2sub([size(distance4D,1) size(distance4D,2)], minidx);
+
+    subplot(1,6,ii)
+    imagesc(distance4D_tmp ,'AlphaData',roi);hold on;
+    plot(sx,sy,'rx', tx,ty,'ro', tx1c,ty1c,'yo');
+    axis equal tight xy; grid on; hold off;
 end
 
+screen2png(['minimal_path_' type '_hmax' num2str(hmax) '_serie'])
 
-screen2png(['minimal_path_hmax' num2str(hmax)])
+
+% %% show surface and shortest path distance
+% xidx = 54; yidx = 63; %61
+% 
+% figure('position',[0 0 1900 1000]);
+% 
+% subplot(122);
+% imagesc(xaxis, yaxis, squeeze(distance4D(yidx,xidx,:,:)));hold on;
+% scatter(xaxis(xidx), yaxis(yidx), 50, 'filled', 'MarkerFaceColor', 'r');
+% xlabel('x'); ylabel('y');
+% title('shortest path distance');        
+% colorbar;
+% axis equal tight xy;
+% clim([0 20])
+% 
+% subplot(1,2,1);
+% trisurf(faces, vertices(:,1), vertices(:,2), vertices(:,3), 'FaceColor', 'c', 'EdgeColor', 'k'); hold on;
+% %scatter3(vertices(find(mask), 1), vertices(find(mask), 2), vertices(find(mask), 3), 10, 'b', 'filled');
+% scatter3(x,y,z,2,'w.');
+% scatter3(vertices(xy2node(yidx,xidx), 1), vertices(xy2node(yidx,xidx), 2), vertices(xy2node(yidx,xidx), 3), 50, 'r', 'filled');
+% xlabel('x'); ylabel('y');
+% %view(20, -30);
+% title('surface');
+% axis equal tight off;
+% 
+% % Set the range of rotation angles
+% angles = -90:2:90;  % Change the increment (5 degrees) as needed
+% 
+% % Initialize GIF file
+% filename = 'rotating_3d_figure.gif';
+% 
+% % Loop through each angle and capture frame for the GIF
+% for i = 1:length(angles)
+%     view([angles(i), 0]);  
+% 
+%     % Capture the current figure as an image
+%     frame = getframe(gcf);
+%     im = frame2im(frame);
+%     [imind, cm] = rgb2ind(im, 256);
+% 
+%     % Write to the GIF File
+%     if i == 1
+%         imwrite(imind, cm, filename, 'gif', 'Loopcount', inf, 'DelayTime', 0.1);
+%     else
+%         imwrite(imind, cm, filename, 'gif', 'WriteMode', 'append', 'DelayTime', 0.1);
+%     end
+% end
+% 
+% 
+% screen2png(['minimal_path_hmax' num2str(hmax)])
