@@ -187,7 +187,7 @@ roi = (areaMatrix{1}+areaMatrix{2}+areaMatrix{3})>0;
 
 for ii = 1:6
     %sy = 80+1;sx=20+1;
-    sy = 25+3*ii;sx=70+1;
+    sy = 25+1*ii;sx=70+1;
     distance4D_tmp = squeeze(distance4D(sy,sx,:,:));
     maskV1 = areaMatrix{1}.*1;
     maskV1(maskV1==0)=nan;
@@ -207,11 +207,13 @@ for ii = 1:6
     [~,minidx] = nanmin(distanceV2(:),[],1);
     [ty2,tx2] = ind2sub([size(distance4D,1) size(distance4D,2)], minidx);
 
-    subplot(1,6,ii)
+    ax(ii)=subplot(1,6,ii);
     imagesc(distance4D_tmp ,'AlphaData',roi);hold on;
     plot(sx,sy,'rx', tx,ty,'ro', tx1c,ty1c,'yo');
     axis equal tight xy; grid on; hold off;
+    % xlim([70 90]);ylim([20 40]);
 end
+linkaxes(ax);
 
 screen2png(['minimal_path_' type '_hmax' num2str(hmax) '_serie'])
 
@@ -231,11 +233,11 @@ screen2png(['minimal_path_' type '_hmax' num2str(hmax) '_serie'])
 % clim([0 20])
 % 
 % subplot(1,2,1);
-% trisurf(faces, vertices(:,1), vertices(:,2), vertices(:,3), 'FaceColor', 'c', 'EdgeColor', 'k'); hold on;
-% %scatter3(vertices(find(mask), 1), vertices(find(mask), 2), vertices(find(mask), 3), 10, 'b', 'filled');
-% scatter3(x,y,z,2,'w.');
-% scatter3(vertices(xy2node(yidx,xidx), 1), vertices(xy2node(yidx,xidx), 2), vertices(xy2node(yidx,xidx), 3), 50, 'r', 'filled');
-% xlabel('x'); ylabel('y');
+trisurf(faces, vertices(:,1), vertices(:,2), vertices(:,3), 'FaceColor', 'c', 'EdgeColor', 'k'); hold on;
+%scatter3(vertices(find(mask), 1), vertices(find(mask), 2), vertices(find(mask), 3), 10, 'b', 'filled');
+scatter3(x,y,z,4,'r.');
+scatter3(vertices(xy2node(yidx,xidx), 1), vertices(xy2node(yidx,xidx), 2), vertices(xy2node(yidx,xidx), 3), 50, 'r', 'filled');
+xlabel('x'); ylabel('y');
 % %view(20, -30);
 % title('surface');
 % axis equal tight off;

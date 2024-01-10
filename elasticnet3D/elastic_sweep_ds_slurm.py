@@ -9,7 +9,7 @@ if jobid == None:
     sweep_id = 0;
 else:
     sweep_id = int(jobid)
-print(sweep_id)
+#print(sweep_id)
 
 ############################
 # elastic net with boundary
@@ -38,6 +38,8 @@ np.random.seed(sweep_id)
 
 out_root_dir = "/tmp/";#"/home/earsenau/sz11_scratch/elasticnet/"
 tgt = "V+D"#"D"#"V+D"
+fixIdx = [1] #area for reference
+varIdx = [2] #area for elastic net simulation
 
 ### learning parameters
 # the weights for the regularization terms
@@ -76,38 +78,33 @@ final_mask_L_d_idx = retinotopyData['final_mask_L_d_idx'].astype(int)[0]
 a,b = dst.ind2sub(shape2d, final_mask_L_idx)
 final_mask_L_sub = np.column_stack((a,b)).astype(int) #[y,x]
 
-mask_v1_sub = np.argwhere(arealBorders['areaMatrix'][0][0] == 1) #[y,x]
-mask_v2_sub = np.argwhere(arealBorders['areaMatrix'][0][1] == 1) #[y,x]
-# mask_v2_sub = np.argwhere(arealBorders['areaMatrix'][0][1] + 
-                            # arealBorders['areaMatrix'][0][2] == 1) #[y,x]
-mask_v1_idx = dst.sub2ind(shape2d, mask_v1_sub[:,0], mask_v1_sub[:,1]) #[v1 pixels x 1]
-mask_v2_idx = dst.sub2ind(shape2d, mask_v2_sub[:,0], mask_v2_sub[:,1])#[v2 pixels x 1]
-
 retinotopy = np.column_stack((mazimuth.ravel(order='F'), maltitude.ravel(order='F')))#[all pixels x 2]. 2nd argument is [azimuth altitude]
 
-mask_v1_d_idx = np.intersect1d(mask_v1_idx, final_mask_L_d_idx)
-mask_v2_d_idx = np.intersect1d(mask_v2_idx, final_mask_L_d_idx)
-a,b = dst.ind2sub(shape2d, mask_v1_d_idx)
-mask_v1_d_sub = np.column_stack((a,b)).astype(int) #[y,x]
-a,b = dst.ind2sub(shape2d, mask_v2_d_idx)
-mask_v2_d_sub = np.column_stack((a,b)).astype(int) #[y,x]
-
-mask_v1_v_idx = np.setdiff1d(mask_v1_idx, final_mask_L_d_idx)
-mask_v2_v_idx = np.setdiff1d(mask_v2_idx, final_mask_L_d_idx)
-a,b = dst.ind2sub(shape2d, mask_v1_v_idx)
-mask_v1_v_sub = np.column_stack((a,b)).astype(int) #[y,x]
-a,b = dst.ind2sub(shape2d, mask_v2_v_idx)
-mask_v2_v_sub = np.column_stack((a,b)).astype(int) #[y,x]
+mask_sub = [None]*3
+mask_idx = [None]*3
+mask_v_sub = [None]*3
+mask_v_idx = [None]*3
+mask_d_sub = [None]*3
+mask_d_idx = [None]*3
+for iarea in range(0,3):
+    mask_sub[iarea] = np.argwhere(arealBorders['areaMatrix'][0][iarea] == 1) #[y,x]
+    mask_idx[iarea] = dst.sub2ind(shape2d, mask_sub[iarea][:,0], mask_sub[iarea][:,1]) #[v1 pixels x 1]
+    mask_d_idx[iarea] = np.intersect1d(mask_idx[iarea], final_mask_L_d_idx)
+    a,b = dst.ind2sub(shape2d, mask_d_idx[iarea])
+    mask_d_sub[iarea] = np.column_stack((a,b)).astype(int) #[y,x]
+    mask_v_idx[iarea] = np.setdiff1d(mask_idx[iarea], final_mask_L_d_idx)
+    a,b = dst.ind2sub(shape2d, mask_v_idx[iarea])
+    mask_v_sub[iarea] = np.column_stack((a,b)).astype(int) #[y,x]
 
 if tgt == "V+D":
-    mask_fix_idx = mask_v1_idx
-    mask_var_idx = mask_v2_idx
+    mask_fix_idx = np.concatenate([mask_idx[index] for index in fixIdx])
+    mask_var_idx = np.concatenate([mask_idx[index] for index in varIdx])
 elif tgt == "D":
-    mask_fix_idx = mask_v1_d_idx
-    mask_var_idx = mask_v2_d_idx
+    mask_fix_idx = np.concatenate([mask_d_idx[index] for index in fixIdx])
+    mask_var_idx = np.concatenate([mask_d_idx[index] for index in varIdx])
 elif tgt == "V":
-    mask_fix_idx = mask_v1_v_idx
-    mask_var_idx = mask_v2_v_idx
+    mask_fix_idx = np.concatenate([mask_v_idx[index] for index in fixIdx])
+    mask_var_idx = np.concatenate([mask_v_idx[index] for index in varIdx])
 
 a,b = dst.ind2sub(shape2d, mask_fix_idx)
 mask_fix_sub = np.column_stack((a,b)).astype(int) #[y,x]
@@ -118,7 +115,7 @@ mask_var_sub = np.column_stack((a,b)).astype(int) #[y,x]
 #########################
 # set up the variables
 #########################
-n_prototypes = len(mask_v2_d_idx)
+n_prototypes = len(mask_var_idx)
 map_h = shape2d[0] #nRows
 map_w = shape2d[1] #nCols
 
@@ -134,11 +131,6 @@ kappa = tf.placeholder(tf.float64, shape=(), name="k")
 #### prototypes
 # generate prototypes on the visual field
 #x0 = e2d.generate_landmarks(magnification, ecc0, ecc1, n_prototypes, noise = prototype_noise)
-
-#option1: use V1
-#pts = retinotopy[mask_fix_idx,:] #should use v2 instead??
-
-#option1: use V2
 pts = retinotopy[mask_var_idx,:] #should use v2 instead??
 
 pts = pts[pts[:,0]>0] #altitude to be greater than 0
@@ -153,8 +145,7 @@ x  = tf.constant(
 
 
 #### train these points on a cortical map (dimenion: map_h * map_w)
-v2_len = len(mask_var_idx)
-y0 = e2d.initial_condition(v2_len, x0)
+y0 = e2d.initial_condition(len(mask_var_idx), x0)
 # y0: [len(mask_v2) x 2]. 2nd argument is (azimuth, altitude)
 y = tf.get_variable(
         "y",
@@ -162,7 +153,6 @@ y = tf.get_variable(
         initializer = y0)
 
 # visual field of V1 (fixed) == x??
-#yb = y[:map_h]
 yb = retinotopy[mask_fix_idx,:]
 
 
@@ -207,47 +197,12 @@ src_idx = np.arange(0,len(mask_var_idx))
 yyb_diff = tf.expand_dims(y, 1) - tf.expand_dims(yb, 0)
 yyb_normsq = tf.einsum('ijk,ijk->ij', yyb_diff, yyb_diff) # closeness in vf
 
-## strategy3: for each V2 pixel, choose pixel in V1 whose path distance is shortest
-# Find indices of the minimum values along each row
-min_indices = np.argmin(distance2D_tf_c, axis=1)
-# Create a new matrix of zeros with the same shape as the original matrix
-distance2D_tf_masked_c = np.zeros_like(distance2D_tf_c)
-rows = np.arange(distance2D_tf_c.shape[0])
-distance2D_tf_masked_c[rows, min_indices] = np.min(distance2D_tf_c, axis=1)    
-distance2D_tf_masked = tf.constant(distance2D_tf_masked_c)
-distance2D_weighted = tf.multiply(distance2D_tf_masked, yyb_normsq)
+
+
+# strategy5: weighted by 1/exp(distance2D)
+distance2D_weighted = tf.multiply(1/tf.exp(distance2D_tf), yyb_normsq)
 reg2 = tf.reduce_sum(distance2D_weighted)
 
-#sanity check
-orig2d = np.nan * np.ones((map_h,map_w,2))
-for pp in range(0,len(mask_var_idx)):
-    orig2d[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = retinotopy[mask_var_idx[pp],:]
-for qq in range(0,len(mask_fix_idx)):
-    orig2d[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = retinotopy[mask_fix_idx[qq],:]
-#plt.imshow(orig2d[:,:,0].T, origin='lower'); plt.colorbar(); plt.title('azimuth')
-mask2d = ~np.isnan(orig2d[:,:,0])
-idx = 105
-plt.imshow(np.multiply(mask2d.T, distance4D[mask_var_sub[idx,0],mask_var_sub[idx,1],:,:]), origin='lower')
-plt.plot(mask_var_sub[idx,1],mask_var_sub[idx,0],'rx')
-plt.plot(mask_fix_sub[min_indices[idx],1], mask_fix_sub[min_indices[idx],0],'ro')
-#plt.xlim([30, 90]);plt.ylim([20, 80])
-#distance4D looks all good
-#min_indices is something wrong for dorsal V2
-#, meaning something wrong at disatnce2D_tf  - something wrong when computing distance2D_tf from distance2D
-# or distance2D? - something wrong for conversion from 4D to 2D
-
-
-##FIXME: idex used in distance2D defined in matlab do NOT match idx defined in dstools
-distance2D_test = distance2D[np.where(gridIdx == mask_var_idx[idx])[0][0],final_mask_L_idx]
-
-distance2D_test2D = np.nan * np.ones((100,100))
-for iii in range(0,len(final_mask_L_idx)):
-    distance2D_test2D[final_mask_L_sub[iii,0],final_mask_L_sub[iii,1]] = distance2D_test[iii];#OK
-plt.imshow(distance2D_test2D, origin='lower')
-plt.plot(mask_var_sub[idx,1],mask_var_sub[idx,0],'rx')
-plt.plot(mask_fix_sub[min_indices[idx],1], mask_fix_sub[min_indices[idx],0],'ro')
-
-## strategy4: for each V1 pixel, choose pixel in V2 whose path distance is shortest
 
 #########################
 # optimization
@@ -263,9 +218,10 @@ opt = tf.train.RMSPropOptimizer(current_eta, momentum = m).minimize(cost, global
 def train(sess, opt, kappa, beta1, beta2, y, b1, b2, out_dir,reg2):
     sess.run(tf.global_variables_initializer())
     k = 30.0
-    for i in range(1000): #1000
+    nIter = 1000  #1000
+    for i in range(nIter):
         sess.run(opt, {kappa: k, beta1: b1, beta2: b2})
-        k = k - k*0.005
+        k = k - k*5/nIter #0.005
         print(sess.run(reg2))
 
     zz = sess.run(y)
@@ -287,8 +243,8 @@ sess = tf.Session()
 
 for i1 in range(0, 1):
     for i2 in range(0, 1):
-        b1 = 0.001*1.6**i1
-        b2 = 0.01#4*1.6**i2
+        b1 = 0.004*1.6**i1
+        b2 = 0.02#4*1.6**i2
         print(b1, b2)
         train(sess, opt, kappa, beta1, beta2, y, b1, b2, out_dir, reg2)
         
@@ -315,13 +271,13 @@ for i1 in range(0, 1):
         # plt.subplot(121); plt.imshow(init2d[:,:,0].T, origin='lower'); plt.colorbar(); plt.title('azimuth')
         # plt.subplot(122); plt.imshow(init2d[:,:,1].T, origin='lower'); plt.colorbar(); plt.title('altitude')
 
-        orig2d = np.nan * np.ones((map_h,map_w,2))
-        for pp in range(0,len(mask_var_idx)):
-            orig2d[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = retinotopy[mask_var_idx[pp],:]
-        for qq in range(0,len(mask_fix_idx)):
-            orig2d[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = retinotopy[mask_fix_idx[qq],:]
-        plt.subplot(121); plt.imshow(orig2d[:,:,0].T, origin='lower'); plt.colorbar(); plt.title('azimuth')
-        plt.subplot(122); plt.imshow(orig2d[:,:,1].T, origin='lower'); plt.colorbar(); plt.title('altitude')
+        # orig2d = np.nan * np.ones((map_h,map_w,2))
+        # for pp in range(0,len(mask_var_idx)):
+        #     orig2d[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = retinotopy[mask_var_idx[pp],:]
+        # for qq in range(0,len(mask_fix_idx)):
+        #     orig2d[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = retinotopy[mask_fix_idx[qq],:]
+        # plt.subplot(121); plt.imshow(orig2d[:,:,0].T, origin='lower'); plt.colorbar(); plt.title('azimuth')
+        # plt.subplot(122); plt.imshow(orig2d[:,:,1].T, origin='lower'); plt.colorbar(); plt.title('altitude')
 
 
     
