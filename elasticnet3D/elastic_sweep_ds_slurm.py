@@ -38,8 +38,8 @@ np.random.seed(sweep_id)
 
 out_root_dir = "/tmp/";#"/home/earsenau/sz11_scratch/elasticnet/"
 tgt = "V+D"#"D"#"V+D"
-fixIdx = [0] #area for reference
-varIdx = [1,2] #area for elastic net simulation
+fixIdx = [0] #area(s) for reference
+varIdx = [1,2] #area(s) for elastic net simulation
 
 ### learning parameters
 # the weights for the regularization terms
@@ -58,7 +58,7 @@ prototype_noise = False
 ## load human brain data 
 #from compute_minimal_path_femesh.m
 loadDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/results/';
-distance2D = scipy.io.loadmat(osp.join(loadDir, 'minimal_path_midthickness_hmax2.mat'))['distance2D_euc']
+distance2D = scipy.io.loadmat(osp.join(loadDir, 'minimal_path_midthickness_hmax2.mat'))['distance2D']#['distance2D_euc']
 
 ## load retinotopy and vfs
 #from export_retinotopy.py
@@ -242,23 +242,43 @@ sess = tf.Session()
 
 for i1 in range(0, 1):
     for i2 in range(0, 1):
-        b1 = 0.004*1.6**i1
+        b1 = 0.02*1.6**i1
         b2 = 0.02#4*1.6**i2
         print(b1, b2)
         train(sess, opt, kappa, beta1, beta2, y, b1, b2, out_dir, reg2)
         
         time.sleep(3)
         saveName = out_dir + "y-" + "%6.5f"%b1 + '-' + "%6.5f"%b2 + ".data"
-        data = np.loadtxt(saveName)
+        result = np.loadtxt(saveName)
 
-        # result
+        #convert from cartesian to polar coordinates
+        result_ecc, result_pa = dst.cartesian_to_polar(result[:,0],result[:,1])
+        result_pol = np.column_stack((result_ecc,result_pa)) #[ecc, pa]
+        
+        yb_ecc, yb_pa = dst.cartesian_to_polar(yb[:,0],yb[:,1])
+        yb_pol = np.column_stack((yb_ecc,yb_pa)) #[ecc, pa]
+        
+        retinotopy_ecc, retinotopy_pa = dst.cartesian_to_polar(retinotopy[:,0],retinotopy[:,1])
+        retinotopy_pol = np.column_stack((retinotopy_ecc,retinotopy_pa)) #[ecc, pa]
+        
+        # result in cartesian coordinate
         result2d = np.nan * np.ones((map_h,map_w,2))
         for pp in range(0,len(mask_var_idx)):
-            result2d[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = data[pp,:]
+            result2d[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = result[pp,:]
         for qq in range(0,len(mask_fix_idx)):
             result2d[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = yb[qq,:]
         plt.subplot(121); plt.imshow(result2d[:,:,0].T, origin='lower'); plt.colorbar(); plt.title('azimuth')
         plt.subplot(122); plt.imshow(result2d[:,:,1].T, origin='lower'); plt.colorbar(); plt.title('altitude')
+        plt.draw()
+        
+        # result in polar coordinate
+        result2d_pol = np.nan * np.ones((map_h,map_w,2))
+        for pp in range(0,len(mask_var_idx)):
+            result2d_pol[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = result_pol[pp,:]
+        for qq in range(0,len(mask_fix_idx)):
+            result2d_pol[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = yb_pol[qq,:]
+        plt.subplot(121); plt.imshow(result2d_pol[:,:,0].T, origin='lower'); plt.title('eccentricity')
+        plt.subplot(122); plt.imshow(result2d_pol[:,:,1].T, origin='lower', vmin=0, vmax=361, cmap='gist_rainbow_r'); plt.title('polar angle')
         plt.draw()
         
         # # initial condition
@@ -278,5 +298,14 @@ for i1 in range(0, 1):
         # plt.subplot(121); plt.imshow(orig2d[:,:,0].T, origin='lower'); plt.colorbar(); plt.title('azimuth')
         # plt.subplot(122); plt.imshow(orig2d[:,:,1].T, origin='lower'); plt.colorbar(); plt.title('altitude')
 
+        # original data in polar coordinate
+        orig2d_pol = np.nan * np.ones((map_h,map_w,2))
+        for pp in range(0,len(mask_var_idx)):
+            orig2d_pol[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = retinotopy_pol[mask_var_idx[pp],:]
+        for qq in range(0,len(mask_fix_idx)):
+            orig2d_pol[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = retinotopy_pol[mask_fix_idx[qq],:]
+        plt.subplot(121); plt.imshow(orig2d_pol[:,:,0].T, origin='lower'); plt.title('eccentricity')
+        plt.subplot(122); plt.imshow(orig2d_pol[:,:,1].T, origin='lower', vmin=0, vmax=361, cmap='gist_rainbow_r'); plt.title('polar angle')
+        plt.draw()
 
     

@@ -194,3 +194,23 @@ def polar_to_cartesian(r, theta):
     x = r * np.cos(theta)
     y = r * np.sin(theta)
     return x, y
+
+def cartesian_to_polar(x, y):
+    r = np.sqrt(x**2 + y**2)
+    theta = shiftPA(180/np.pi*np.arctan2(y,x)) #[degree]
+    return r, theta
+
+def shiftPA(z_values_PA):
+    # # Shifting PA values so gist_rainbow_r colormap can be used
+    # sum = z_values_PA < 180
+    # minus = z_values_PA > 180
+    # z_values_PA[sum] = z_values_PA[sum] + 180
+    # z_values_PA[minus] = z_values_PA[minus] - 180
+    # return z_values_PA
+    
+    # Shifting PA values so gist_rainbow_r colormap can be used
+    sum = z_values_PA < 0
+    #minus = z_values_PA > 180
+    z_values_PA[sum] = z_values_PA[sum] + 360
+    #z_values_PA[minus] = z_values_PA[minus] - 180
+    return z_values_PA

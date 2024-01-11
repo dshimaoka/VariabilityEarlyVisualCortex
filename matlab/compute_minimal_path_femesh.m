@@ -234,7 +234,7 @@ screen2png(['minimal_path_' type '_hmax' num2str(hmax) '_serie'])
 
 
 % %% show surface and shortest path distance
-% xidx = 54; yidx = 63; %61
+xidx = 54; yidx = 63; %61
 % 
 % figure('position',[0 0 1900 1000]);
 % 
@@ -250,7 +250,7 @@ screen2png(['minimal_path_' type '_hmax' num2str(hmax) '_serie'])
 % subplot(1,2,1);
 trisurf(faces, vertices(:,1), vertices(:,2), vertices(:,3), 'FaceColor', 'c', 'EdgeColor', 'k'); hold on;
 %scatter3(vertices(find(mask), 1), vertices(find(mask), 2), vertices(find(mask), 3), 10, 'b', 'filled');
-scatter3(x,y,z,4,'r.');
+%scatter3(x,y,z,4,'r.');
 scatter3(vertices(xy2node(yidx,xidx), 1), vertices(xy2node(yidx,xidx), 2), vertices(xy2node(yidx,xidx), 3), 50, 'r', 'filled');
 xlabel('x'); ylabel('y');
 % %view(20, -30);
