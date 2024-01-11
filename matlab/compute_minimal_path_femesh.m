@@ -15,10 +15,8 @@ figure;plot3(x,y,z,'.');xlabel('x');ylabel('y');zlabel('z');
 
 %% 1. import entire brain
 tic
-type = 'white';
+type = 'midthickness';%'white' %cannot generateMesh with 'pial'
 hmax = 2; %1: fine but too slow, 3: too coarse
-%sdata=gifti('S1200_7T_Retinotopy181.L.midthickness_MSMAll.32k_fs_LR.surf.gii');
-%sdata = gifti('S1200_7T_Retinotopy181.L.pial_MSMAll.32k_fs_LR.surf.gii');
 sdata = gifti(['S1200_7T_Retinotopy181.L.' type '_MSMAll.32k_fs_LR.surf.gii']);
 stlwrite('Geom.stl', sdata.faces, sdata.vertices)
 model = createpde(1);
@@ -154,10 +152,9 @@ hold off;
 
 %% compute all distance
 distance4D = nan(numel(yaxis), numel(xaxis), numel(yaxis), numel(xaxis));
-%distance2D = nan(numel(surfaceNodes));
 for snode=1:numel(surfaceNodes_unq)
     disp(snode)
-    [~, distance_all_unq] = shortestpathtree(G, surfaceNodes_unq(snode), surfaceNodes_unq);%'OutputForm','cell');
+    [~, distance_all_unq] = shortestpathtree(G, surfaceNodes_unq(snode), surfaceNodes_unq);
     
     distance_all = nan(1,numel(surfaceNodes));
     for tt = 1:numel(surfaceNodes_unq)
@@ -179,16 +176,34 @@ for snode=1:numel(surfaceNodes_unq)
 end
 distance2D = reshape(distance4D, numel(yaxis)*numel(xaxis), numel(yaxis)*numel(xaxis));
 
-save(['minimal_path_' type '_hmax' num2str(hmax) ],'distance4D','distance2D','xy2node','surfaceNodes');%,'G','-v7.3');
+%% Euclidean distance
+distance4D_euc = nan(numel(yaxis), numel(xaxis), numel(yaxis), numel(xaxis));
+X=repmat(x, [1,numel(x)]);
+Y=repmat(y, [1,numel(y)]);
+Z=repmat(z, [1,numel(z)]);
+distance_euc_c = sqrt((X-X').^2+(Y-Y').^2+(Z-Z').^2);
+[sy,sx] = ind2sub([numel(yaxis) numel(xaxis)], withinMask);
+[ty,tx] = ind2sub([numel(yaxis) numel(xaxis)], withinMask);
+for ii = 1:numel(withinMask)
+    for jj = 1:numel(withinMask)
+        distance4D_euc(sy(ii), sx(ii), ty(jj), tx(jj)) = distance_euc_c(ii,jj);
+    end
+end
+distance2D_euc = reshape(distance4D_euc, numel(yaxis)*numel(xaxis), numel(yaxis)*numel(xaxis));
+
+
+save(['minimal_path_' type '_hmax' num2str(hmax) ],'distance4D','distance2D','xy2node','surfaceNodes',...
+    'distance4D_euc','distance2D_euc');%,'G','-v7.3');
 
 %% sanity check
 load('/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/results/fieldSign_avg_smoothed_arealBorder.mat')
 roi = (areaMatrix{1}+areaMatrix{2}+areaMatrix{3})>0;
 
+
 for ii = 1:6
     %sy = 80+1;sx=20+1;
     sy = 25+1*ii;sx=70+1;
-    distance4D_tmp = squeeze(distance4D(sy,sx,:,:));
+    distance4D_tmp = squeeze(distance4D_euc(sy,sx,:,:));
     maskV1 = areaMatrix{1}.*1;
     maskV1(maskV1==0)=nan;
     maskV2 = areaMatrix{2}.*1;
@@ -240,7 +255,7 @@ scatter3(vertices(xy2node(yidx,xidx), 1), vertices(xy2node(yidx,xidx), 2), verti
 xlabel('x'); ylabel('y');
 % %view(20, -30);
 % title('surface');
-% axis equal tight off;
+ axis equal tight off;
 % 
 % % Set the range of rotation angles
 % angles = -90:2:90;  % Change the increment (5 degrees) as needed

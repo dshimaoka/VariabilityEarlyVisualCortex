@@ -38,8 +38,8 @@ np.random.seed(sweep_id)
 
 out_root_dir = "/tmp/";#"/home/earsenau/sz11_scratch/elasticnet/"
 tgt = "V+D"#"D"#"V+D"
-fixIdx = [1] #area for reference
-varIdx = [2] #area for elastic net simulation
+fixIdx = [0] #area for reference
+varIdx = [1,2] #area for elastic net simulation
 
 ### learning parameters
 # the weights for the regularization terms
@@ -58,8 +58,7 @@ prototype_noise = False
 ## load human brain data 
 #from compute_minimal_path_femesh.m
 loadDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/results/';
-distance4D = scipy.io.loadmat(osp.join(loadDir, 'minimal_path_hmax2.mat'))['distance4D']
-distance2D = scipy.io.loadmat(osp.join(loadDir, 'minimal_path_hmax2.mat'))['distance2D']
+distance2D = scipy.io.loadmat(osp.join(loadDir, 'minimal_path_midthickness_hmax2.mat'))['distance2D_euc']
 
 ## load retinotopy and vfs
 #from export_retinotopy.py
