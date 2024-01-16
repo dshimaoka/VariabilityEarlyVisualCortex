@@ -1,3 +1,6 @@
+subject_id = {'157336','585256','114823','581450','725751'};
+
+
 % %% import mask from export_geometry_test.py
 load('array_3d.mat','array_3d','grid_x','grid_y');%,'mask');
 xaxis = squeeze(grid_x(:,1))';

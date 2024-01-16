@@ -5,26 +5,27 @@
 %
 % this script requires imageProcessing toolbox (imfill, imgaussfilt)
 
-subject_id = {'avg'};%{'146735','157336','585256','114823','581450','725751'};
+subject_id = {'157336','585256','114823','581450','725751'};
 saveDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/results/';
-
-for sid = 1:length(subject_id)
+%NG '585256'
+for sid = 1%1:length(subject_id)
 
     %% load field sign data
-    vfsfilename = fullfile(saveDir, ['fieldSign_'  subject_id{sid}   '_smoothed.mat']);
+    %vfsfilename = fullfile(saveDir, ['fieldSign_'  subject_id{sid}   '_smoothed.mat']);
+    vfsfilename = fullfile(saveDir, ['geometry_retinotopy_'  subject_id{sid}   '.mat']);
     load(vfsfilename, 'vfs');
 
 
     %% smoothing
     mask = ~isnan(vfs);
     vfs_c = interpNanImages(vfs);
-    vfs_f = imgaussfilt(vfs_c, .5).*mask; %2
-   % vfs_f = imdiffusefilt(vfs_c, 'GradientThreshold',10).*mask;
-    %vfs_f = imbilatfilt(vfs_c, 2).*mask;
+   % vfs_f = imgaussfilt(vfs_c, 2).*mask; %2
+    %vfs_f = imdiffusefilt(vfs_c, 'GradientThreshold',10).*mask;
+    vfs_f = imbilatfilt(vfs_c, 3).*mask;
     
 
     %% thresholding
-    threshold = .3;%.3;%th for binalizing vfs low > less space between borders
+    threshold = .5;%.3;%th for binalizing vfs low > less space between borders
     std_signMap = nanstd(vfs_f(:));
 	vfs_th = vfs_f;
 

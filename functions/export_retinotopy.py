@@ -77,16 +77,15 @@ for ss in range(0,len(subject_id_all)):
     ECCData_L = dst.getciftiIngifti(ECCData, final_mask_L);
     ECCData_mat[:,:,ss] = dst.gifti2mat(stdSphere, ECCData_L, final_mask_L, grid_x, grid_y);
     
-# plt.imshow(PAData_mat, extent=[np.min(grid_x),np.max(grid_x)+1, np.min(grid_y), np.max(grid_y)+1],
-#            origin='lower', cmap='viridis')    
-# plt.show();
-
 
 # gnd avg across subjects
 #import cmath
-mPA_c = np.nanmean(np.exp(complex(0,1) * PAData_mat[:,:,0:10] / 360 * 2*np.pi), 2)
+mPA_c = np.nanmean(np.exp(complex(0,1) * PAData_mat / 360 * 2*np.pi), 2)
 mPAData = np.arctan2(np.imag(mPA_c), np.real(mPA_c)) * np.pi/180
 mECCData = np.nanmean(ECCData_mat, 2);
+plt.imshow(mPAData, extent=[np.min(grid_x),np.max(grid_x)+1, np.min(grid_y), np.max(grid_y)+1],
+            origin='lower', cmap='viridis'); plt.colorbar();    
+plt.show();
 
 # convert to alititude and azimuth
 mazimuth, maltitude = dst.polar_to_cartesian(mECCData, 180/np.pi*mPAData)
@@ -104,11 +103,11 @@ plt.imshow(theta[:,:].T, extent=[20,120, 0,100], origin='lower', cmap='viridis')
 
 vfsfilename = os.path.join(saveDir, 'fieldSign_avg_smoothed.mat')
 savemat(vfsfilename, {'vfs': theta, 'grid_z0_PA': mPAData, 'grid_z0_ecc': mECCData,
-                               'mazimuth': mazimuth, 'maltitude': maltitude,
-                               'grid_x': grid_x,'grid_y': grid_y, 
-                               'final_mask_L': final_mask_L, 'final_mask_L_d': final_mask_L_d,
-                               'final_mask_L_d_idx': final_mask_L_d_idx, 
-                               'final_mask_L_idx': final_mask_L_idx});
+                                'mazimuth': mazimuth, 'maltitude': maltitude,
+                                'grid_x': grid_x,'grid_y': grid_y, 
+                                'final_mask_L': final_mask_L, 'final_mask_L_d': final_mask_L_d,
+                                'final_mask_L_d_idx': final_mask_L_d_idx, 
+                                'final_mask_L_idx': final_mask_L_idx});
 
 
 

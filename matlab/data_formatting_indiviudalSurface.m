@@ -3,13 +3,17 @@
 clear all
 
 subject_id = {'114823','157336','585256','114823','581450','725751'};
+loadDir = '/mnt/dshi0006_market/HCPData/';
 saveDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/data/';
 
 addpath(genpath('.'))
 
 for ii = 1:numel(subject_id)
     % %Connectivity of triangular faces
-    loadName = [subject_id{ii} '.lh.midthickness.32k_fs_LR.surf.gii'];
+    loadName = fullfile(loadDir,subject_id{ii},'surf',[subject_id{ii} '.lh.midthickness.32k_fs_LR.surf.gii']);
+    % NOT this one:
+    % loadName2 = fullfile(loadDir,subject_id{ii},'MNINonLinear','fsaverage_LR32k',[subject_id{ii} '.L.white_MSMAll.32k_fs_LR.surf.gii']);
+
     mid_gifti_L=gifti(loadName);
     %    faces: [64980×3 int32]
     %      mat: [4×4 double]
@@ -22,12 +26,13 @@ for ii = 1:numel(subject_id)
     save(fullfile(saveDir, ['mid_pos_L_' subject_id{ii}]), 'mid_pos_L');
 
 
-    %% curvature 
-    loadName = [subject_id{ii} '.curvature-midthickness.lh.32k_fs_LR.func.gii'];
-    curvature_gifti_L=gifti(loadName);
-    % cdata: [32492×1 single]
-    curvature = curvature_gifti_L.cdata;
 
-    save(fullfile(saveDir, ['gifti_curvature_L_' subject_id{ii}]), 'curvature');
+    %% curvature 
+    % loadName = [subject_id{ii} '.curvature-midthickness.lh.32k_fs_LR.func.gii'];
+    % curvature_gifti_L=gifti(loadName);
+    % % cdata: [32492×1 single]
+    % curvature = curvature_gifti_L.cdata;
+    % 
+    % save(fullfile(saveDir, ['gifti_curvature_L_' subject_id{ii}]), 'curvature');
 
 end

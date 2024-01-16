@@ -300,15 +300,15 @@ for i1 in range(0, 1):
         plt.subplot(121); plt.imshow(orig2d[:,:,0].T, origin='lower'); plt.colorbar(); plt.title('azimuth')
         plt.subplot(122); plt.imshow(orig2d[:,:,1].T, origin='lower'); plt.colorbar(); plt.title('altitude')
 
-        # original data in polar coordinate
-        # orig2d_pol = np.nan * np.ones((map_h,map_w,2))
-        # for pp in range(0,len(mask_var_idx)):
-        #     orig2d_pol[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = retinotopy_pol[mask_var_idx[pp],:]
-        # for qq in range(0,len(mask_fix_idx)):
-        #     orig2d_pol[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = retinotopy_pol[mask_fix_idx[qq],:]
-        # plt.subplot(121); plt.imshow(orig2d_pol[:,:,0].T, origin='lower'); plt.title('eccentricity')
-        # plt.subplot(122); plt.imshow(orig2d_pol[:,:,1].T, origin='lower', vmin=0, vmax=361, cmap='gist_rainbow_r'); plt.title('polar angle')
-        # plt.draw()
+        #original data in polar coordinate
+        orig2d_pol = np.nan * np.ones((map_h,map_w,2))
+        for pp in range(0,len(mask_var_idx)):
+            orig2d_pol[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = retinotopy_pol[mask_var_idx[pp],:]
+        for qq in range(0,len(mask_fix_idx)):
+            orig2d_pol[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = retinotopy_pol[mask_fix_idx[qq],:]
+        plt.subplot(121); plt.imshow(orig2d_pol[:,:,0].T, origin='lower'); plt.title('eccentricity')
+        plt.subplot(122); plt.imshow(orig2d_pol[:,:,1].T, origin='lower', vmin=0, vmax=361, cmap='gist_rainbow_r'); plt.title('polar angle')
+        plt.draw()
 
         # deviance between original and simulation in [deg]
         dev2d = np.sqrt((result2d[:,:,0]-orig2d[:,:,0])**2 + (result2d[:,:,1]-orig2d[:,:,1])**2)
