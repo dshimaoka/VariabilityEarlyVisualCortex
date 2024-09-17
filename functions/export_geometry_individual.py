@@ -85,7 +85,7 @@ for ids in range(0,len(all_ids)):
     # load 3D geometrical data of individual brain, converto gifti space, then to 2D matrix
     # data from Fernanda through RDS
     locData_mat = np.zeros((len(grid_y),len(grid_x),3))
-    locData = scipy.io.loadmat(osp.join(loadDir, 'mid_pos_L_' + subject_id + '.mat'))['mid_pos_L']#grand average
+    locData = scipy.io.loadmat(osp.join(loadDir, 'mid_pos_L_' + subject_id + '.mat'))['mid_pos_L']
     #locData = data['pos'][0][0]; #sphere
     for idim in range(0,3):
         locData_tmp = dst.getciftiIngifti(locData[:,idim], final_mask_L);
