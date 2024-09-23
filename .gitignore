@@ -38,7 +38,7 @@
 **/*.gz
 **/*.simg
 **/*.stl
-**/*.m
+*.m
 
 # TPM folders
 tpms/*/
