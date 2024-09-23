@@ -38,6 +38,7 @@
 **/*.gz
 **/*.simg
 **/*.stl
+**/*.m
 
 # TPM folders
 tpms/*/
@@ -48,4 +49,4 @@ tpms/*/
 **/matlab/fieldtrip/
 **/matlab/gifti/
 
-**/obs/
+**/obs/*
