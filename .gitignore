@@ -36,6 +36,8 @@
 **/*.border
 **/*.scene
 **/*.gz
+**/*.simg
+**/*.stl
 
 # TPM folders
 tpms/*/

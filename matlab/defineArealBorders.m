@@ -2,17 +2,22 @@
 % applies smoothing and thresholding on the field sign map
 % allows specifying pixels by mouse clicking
 % finds connected pixels 
+% save smoothed vfs, sign of vfs and areaMatrix as  "arealBorder.mat" 
 %
 % this script requires imageProcessing toolbox (imfill, imgaussfilt)
+%
+% somehow worth result than the previous version ('fieldSign_'  subject_id{sid}   '_smoothed')??
 
-subject_id = {'avg'};%{'146735','157336','585256','114823','581450','725751'};
-saveDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/results/';
+subject_id = {'157336','585256','114823','581450','725751'}; %{'avg'};%{'146735','157336','585256','114823','581450','725751'};
+loadDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';%'/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/results/';
+saveDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
 
 for sid = 1:length(subject_id)
-
+    
     %% load field sign data
-    vfsfilename = fullfile(saveDir, ['fieldSign_'  subject_id{sid}   '_smoothed.mat']);
-    load(vfsfilename, 'vfs');
+    %fname = ['fieldSign_'  subject_id{sid}   '_smoothed'];
+    fname = ['geometry_retinotopy_' subject_id{sid}];
+    load(fullfile(loadDir,  subject_id{sid}, [fname '.mat']), 'vfs');
 
 
     %% smoothing
@@ -85,10 +90,11 @@ for sid = 1:length(subject_id)
     end
     legend(label);
     axis xy equal;
-    screen2png([vfsfilename(1:end-4), '_arealBorder.png']);
+    screen2png(fullfile(saveDir, [fname, '_arealBorder.png']));
 
 
     %% save results
-    save( [vfsfilename(1:end-4), '_arealBorder.mat'],'areaMatrix',"connectedPixels",'vfs_th');
+    save( fullfile(saveDir, [fname, '_arealBorder.mat']), ...
+        'areaMatrix',"connectedPixels",'vfs_th',"vfs_f");
     close all;
 end

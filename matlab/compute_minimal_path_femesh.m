@@ -195,7 +195,7 @@ end
 distance2D_euc = reshape(distance4D_euc, numel(yaxis)*numel(xaxis), numel(yaxis)*numel(xaxis));
 
 
-save(['minimal_path_' type '_hmax' num2str(hmax) ],'distance4D','distance2D','xy2node','surfaceNodes',...
+save(fullfile(saveDir,['minimal_path_' type '_hmax' num2str(hmax) '_' subject_id{sid}]),'distance4D','distance2D','xy2node','surfaceNodes',...
     'distance4D_euc','distance2D_euc');%,'G','-v7.3');
 
 %% sanity check
@@ -251,7 +251,7 @@ xidx = 54; yidx = 63; %61
 % clim([0 20])
 % 
 % subplot(1,2,1);
-trisurf(faces, vertices(:,1), vertices(:,2), vertices(:,3), 'FaceColor', 'c', 'EdgeColor', 'k'); hold on;
+trisurf(faces, vertices(:,1), vertices(:,2), vertices(:,3), 'FaceColor', 'c', 'EdgeColor', 'none','facealpha', .1); hold on;
 %scatter3(vertices(find(mask), 1), vertices(find(mask), 2), vertices(find(mask), 3), 10, 'b', 'filled');
 %scatter3(x,y,z,4,'r.');
 scatter3(vertices(xy2node(yidx,xidx), 1), vertices(xy2node(yidx,xidx), 2), vertices(xy2node(yidx,xidx), 3), 50, 'r', 'filled');

@@ -1,6 +1,7 @@
 subject_id = {'157336','585256','114823','581450','725751'};
 
 loadDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/data/';
+saveDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/results/';
 
 for ii = 2%:numel(subject_id)
     % %% import mask from export_geometry_test.py
@@ -25,14 +26,16 @@ for ii = 2%:numel(subject_id)
     hmax = 2; %1: fine but too slow, 3: too coarse
     load(fullfile(loadDir, ['tri_faces_L_' subject_id{ii}]), 'tri_faces_L')
     load(fullfile(loadDir, ['mid_pos_L_' subject_id{ii}]), 'mid_pos_L');
-    stlwrite('Geom.stl', tri_faces_L, mid_pos_L)
-    model = createpde(1);
+        stlwrite(fullfile(saveDir, ['Geom_'  subject_id{ii} '.stl']), tri_faces_L, mid_pos_L)
+        model = createpde(1);
     %model = createpde('structural','static-solid');
-    importGeometry(model,"Geom.stl"); %"BracketTwoHoles.stl");%
+    importGeometry(model, fullfile(saveDir, ['Geom_'  subject_id{ii} '.stl'])); %"BracketTwoHoles.stl");%
     %pdegplot(model)
-    generateMesh(model,"Hmax",hmax);%"geometricOrder","linear"); %, "Hmin",0.3*mm); %determines coarseness of the mesh
-    pdeplot3D(model)
+  
+    % generateMesh(model,"Hmax",hmax);%,"geometricOrder","linear","Hmin",0.2*mm); %determines coarseness of the mesh
+generateMesh(model,"geometricOrder","linear","Hmin",.01);
     t1=toc
+     pdeplot3D(model)
 
     %% 2. extract faces and vertices from FEMesh
     % The vertices array will contain the coordinates of all vertices in the mesh.
