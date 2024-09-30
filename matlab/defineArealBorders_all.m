@@ -2,46 +2,35 @@
 % applies smoothing and thresholding on the field sign map
 % allows specifying pixels by mouse clicking
 % finds connected pixels 
-% save smoothed vfs, sign of vfs and areaMatrix as  "arealBorder.mat" 
 %
 % this script requires imageProcessing toolbox (imfill, imgaussfilt)
-%
-% somehow worth result than the previous version ('fieldSign_'  subject_id{sid}   '_smoothed')??
 
-subject_id = {'157336','585256','114823','581450','725751'}; %{'avg'};%{'146735','157336','585256','114823','581450','725751'};
-loadDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';%'/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/results/';
+subject_id =  {'avg'};%'114823','157336','585256','114823','581450','725751'};
+% saveDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/results/';
 saveDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
-
 for sid = 1:length(subject_id)
-    
+
     %% load field sign data
-    fname = ['fieldSign_'  subject_id{sid}   '_smoothed'];
-    %fname = ['geometry_retinotopy_' subject_id{sid} '_arealBorder'];
-    load(fullfile(loadDir,  subject_id{sid}, [fname '.mat']), 'vfs');
+    % vfsfilename = fullfile(saveDir,  subject_id{sid} ,['fieldSign_'  subject_id{sid}   '_smoothed.mat']);
+    % load(vfsfilename, 'vfs');
+    retinotopyFilename = fullfile(saveDir,  subject_id{sid} ,['geometry_retinotopy_'  subject_id{sid}   '.mat']);
+    load(retinotopyFilename, 'vfs','grid_azimuth','grid_altitude','grid_ecc')
 
 
-    %% smoothing
-    mask = ~isnan(vfs);
-    vfs_c = interpNanImages(vfs);
-    vfs_f = imgaussfilt(vfs_c, .5).*mask; %2
-   % vfs_f = imdiffusefilt(vfs_c, 'GradientThreshold',10).*mask;
-    %vfs_f = imbilatfilt(vfs_c, 2).*mask;
-    
+    %% test
+    smoothingFac = 2;%3
+    threshold = .3; %1.5
+    mask = ~isnan(vfs); %using a small mask is ciritical to obtain reasonable segmentation of vfs
+    [~,vfs_th, fig] = getHumanAreasX(grid_azimuth, grid_altitude, grid_ecc, smoothingFac, threshold, mask);
+     screen2png(fullfile(saveDir, subject_id{sid},['areaSegmentation_' subject_id{sid} '.png']));
+    close all
 
-    %% thresholding
-    threshold = .3;%.3;%th for binalizing vfs low > less space between borders
-    std_signMap = nanstd(vfs_f(:));
-	vfs_th = vfs_f;
-
-    vfs_th(abs(vfs_th) < threshold*std_signMap) = 0;
-	vfs_th(vfs_th >= threshold*std_signMap) = 1;
-	vfs_th(vfs_th <= -threshold*std_signMap) = -1;
-
-    figure;
-    subplot(311); imagesc(vfs);colorbar; axis equal tight xy; title('original');
-    subplot(312); imagesc(vfs_f);colorbar; axis equal tight xy; hold on;title('smoothed');
-    subplot(313); imagesc(vfs_th);colorbar; axis equal tight xy;title('thresholded');
-    linkaxes(findall(gcf, 'type', 'axes'))
+    % figure;
+        % subplot(411); imagesc(vfs);colorbar; axis equal tight xy; title('original');
+        % subplot(412); imagesc(vfs_f);colorbar; axis equal tight xy; hold on;title('smoothed');
+        % subplot(413); imagesc(vfs_th);colorbar; axis equal tight xy;title('thresholded');
+        % subplot(414); imagesc(signBorder);colorbar; axis equal tight xy;title('Garret border');
+        % linkaxes(findall(gcf, 'type', 'axes'))
 
 
     %% define areas by clicking region(s) of interest
@@ -52,9 +41,11 @@ for sid = 1:length(subject_id)
 
     lcolor = lines(numel(label));
 
+    imagesc(vfs);
+
     connectedPixels = [];
     for ii = 1:numel(label)
-        figure;
+        figure; 
         [connectedPixels{ii}, connectedMatrix{ii}] = ...
             findConnectedPixels(vfs_th, label{ii});
         close;
@@ -90,11 +81,12 @@ for sid = 1:length(subject_id)
     end
     legend(label);
     axis xy equal;
-    screen2png(fullfile(saveDir, [fname, '_arealBorder.png']));
+    screen2png(fullfile(saveDir,  subject_id{sid}, ['arealBorder_' subject_id{sid}]));
 
 
     %% save results
-    save( fullfile(saveDir, [fname, '_arealBorder.mat']), ...
-        'areaMatrix',"connectedPixels",'vfs_th',"vfs_f");
+    %save( [retinotopyFilename(1:end-4), '_arealBorder.mat'],...
+    save(fullfile(saveDir,  subject_id{sid}, ['arealBorder_' subject_id{sid}]),... 
+    'areaMatrix',"connectedPixels",'vfs_th');%,'-append'); %'vfs_f'
     close all;
 end

@@ -1,12 +1,22 @@
-subject_id = {'157336','585256','114823','581450','725751'};
+subject_id = {'avg','114823','157336','585256','581450','725751'};
+%114823: meshing failed for hmax of 2 and hmin of 1
 
-loadDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/data/';
-saveDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/results/';
+%loadDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/data/';
+saveDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
 
-for ii = 2%:numel(subject_id)
-    % %% import mask from export_geometry_test.py
-    %load('array_3d.mat','array_3d','grid_x','grid_y');%,'mask');
-    load(fullfile(loadDir, ['geometry_retinotopy_'  subject_id{ii}   '.mat']),'array_3d','grid_x','grid_y');
+type = 'midthickness';%'white' %cannot generateMesh with 'pial'
+hmax = 2; %1: fine but too slow, 3: too coarse
+
+for sid= 1%:numel(subject_id) 
+    % from export_geometry_individual.py
+    load(fullfile(saveDir, subject_id{sid}, ['geometry_retinotopy_'  subject_id{sid}   '.mat']),...
+        'array_3d','grid_x','grid_y', 'grid_curv');%,'mask');
+    
+    % from defineArealBorders_individual.m
+    load(fullfile(saveDir,subject_id{sid},['arealBorder_' subject_id{sid}]),...
+        'areaMatrix');
+     roi = (areaMatrix{1}+areaMatrix{2}+areaMatrix{3})>0;
+
     xaxis = squeeze(grid_x(:,1))';
     yaxis = squeeze(grid_y(1,:));
     x = reshape(array_3d(:,:,1),numel(xaxis)*numel(yaxis),1);
@@ -17,30 +27,17 @@ for ii = 2%:numel(subject_id)
     x = x(withinMask);
     y = y(withinMask);
     z = z(withinMask);
-    figure;plot3(x,y,z,'.');xlabel('x');ylabel('y');zlabel('z');
+    %figure;plot3(x,y,z,'.');xlabel('x');ylabel('y');zlabel('z');
 
 
     %% 1. import entire brain
     tic
-    type = 'midthickness';%'white' %cannot generateMesh with 'pial'
-    hmax = 2; %1: fine but too slow, 3: too coarse
-    load(fullfile(loadDir, ['tri_faces_L_' subject_id{ii}]), 'tri_faces_L')
-    load(fullfile(loadDir, ['mid_pos_L_' subject_id{ii}]), 'mid_pos_L');
-        stlwrite(fullfile(saveDir, ['Geom_'  subject_id{ii} '.stl']), tri_faces_L, mid_pos_L)
-        model = createpde(1);
-    %model = createpde('structural','static-solid');
-    importGeometry(model, fullfile(saveDir, ['Geom_'  subject_id{ii} '.stl'])); %"BracketTwoHoles.stl");%
+    model = createpde(1);
+    importGeometry(model, fullfile(saveDir, subject_id{sid}, ['Geom_'  subject_id{sid} '_hclaplacian.stl'])); %"BracketTwoHoles.stl");%
     %pdegplot(model)
-  
-    % generateMesh(model,"Hmax",hmax);%,"geometricOrder","linear","Hmin",0.2*mm); %determines coarseness of the mesh
-generateMesh(model,"geometricOrder","linear","Hmin",.01);
-    t1=toc
-     pdeplot3D(model)
+    generateMesh(model,"Hmax",hmax);%,"geometricOrder","linear","Hmin",0.2*mm); %determines coarseness of the mesh
 
-    %% 2. extract faces and vertices from FEMesh
-    % The vertices array will contain the coordinates of all vertices in the mesh.
-    % The faces array will have the indices of vertices that define each face of every element in the mesh.
-    % The unique_faces array will give you a list of unique faces in the mesh.
+   t1=toc %20s
 
     tic;
     nodes = model.Mesh.Nodes';
@@ -68,7 +65,7 @@ generateMesh(model,"geometricOrder","linear","Hmin",.01);
 
     % Ensure unique faces (remove duplicate faces if any)
     unique_faces = unique(sort(faces, 2), 'rows');
-    t2=toc
+    t2=toc %~30s
 
     %% 3. convert FEMesh to graph
     tic
@@ -79,7 +76,7 @@ generateMesh(model,"geometricOrder","linear","Hmin",.01);
     % Create an adjacency matrix based on element connectivity
     num_nodes = size(nodes, 1);
 
-    %% strategy 2:   Create a graph object from edges and weights
+    % Create a graph object from edges and weights
     elem_cell = cell(size(elements,1),1);
     % Convert the matrix into cell array
     for i = 1:numel(elem_cell)
@@ -129,7 +126,7 @@ generateMesh(model,"geometricOrder","linear","Hmin",.01);
     xlabel('x'); ylabel('y');
     axis equal tight;
     hold off;
-    screen2png(fullfile(loadDir, ['minimal_path_' type '_hmax' num2str(hmax) '_' subject_id{ii}]));
+    close all
 
     %% compute all distance
     distance4D = nan(numel(yaxis), numel(xaxis), numel(yaxis), numel(xaxis));
@@ -172,9 +169,120 @@ generateMesh(model,"geometricOrder","linear","Hmin",.01);
     end
     distance2D_euc = reshape(distance4D_euc, numel(yaxis)*numel(xaxis), numel(yaxis)*numel(xaxis));
 
-    save(fullfile(loadDir, ['minimal_path_' type '_hmax' num2str(hmax) '_' subject_id{ii}]), ...
+
+    save(fullfile(saveDir, subject_id{sid}, ['minimal_path_' type '_hmax' num2str(hmax) '_' subject_id{sid}]),...
         'distance4D','distance2D','xy2node','surfaceNodes',...
         'distance4D_euc','distance2D_euc');%,'G','-v7.3');
-end
 
+
+  %% show surface and shortest path distance
+    %xidx = 54; yidx = 63; %61
+    xidx = 44; yidx=63;
+    figure('position',[0 0 1900 1000]);
+
+    ax(3)=subplot(133);
+    imagesc(xaxis, yaxis, squeeze(distance4D(yidx,xidx,:,:)));hold on;
+    scatter(xaxis(xidx), yaxis(yidx), 50, 'filled', 'MarkerFaceColor', 'r');
+    xlabel('x'); ylabel('y');
+    title('shortest path distance');
+    colorbar;
+    axis equal tight xy; grid on;
+    clim([0 20])
+
+    ax(1)=subplot(1,3,1);
+    trisurf(faces, vertices(:,1), vertices(:,2), vertices(:,3), 'FaceColor', 'c', 'EdgeColor', 'k');%,'facealpha', .05);
+    shading interp
+    light
+    material dull
+    hold on;
+    % scatter3(vertices(find(mask), 1), vertices(find(mask), 2), vertices(find(mask), 3), 10, 'b', 'filled');
+    scatter3(vertices(xy2node(yidx,xidx), 1), vertices(xy2node(yidx,xidx), 2), vertices(xy2node(yidx,xidx), 3), 300, 'r', 'filled');
+    view(90, 0);
+    title('surface from midline');
+    axis ij equal tight off;
+
+    ax(2)=subplot(1,3,2);
+    imagesc(xaxis, yaxis, grid_curv);hold on;
+    xlabel('x'); ylabel('y');
+    title('curvature');
+    colorbar;
+    axis equal tight xy; grid on;
+ 
+    
+    linkaxes(ax([2 3]));
+
+     screen2png(fullfile(saveDir, subject_id{sid}, ['surface_minimal_path_hmax' num2str(hmax) '_' subject_id{sid}]));
+
+
+    %% sanity check 2
+
+ figure('position',[0 0 1980 1080]);
+ for ii = 1:6
+     
+     % sy = 25+1*ii;sx=70+1;
+    sy =50 + 2*ii; sx = 43 +2*ii;
+
+
+     distance4D_tmp = squeeze(distance4D_euc(sy,sx,:,:));
+     maskV1 = areaMatrix{1}.*1;
+     maskV1(maskV1==0)=nan;
+     maskV2 = areaMatrix{2}.*1;
+     maskV2(maskV2==0)=nan;
+     distanceV1 = distance4D_tmp .* maskV1;
+     %option1: minimum
+     [~,minidx] = nanmin(distanceV1(:),[],1);
+     [ty,tx] = ind2sub([size(distance4D,1) size(distance4D,2)], minidx);
+     %option2: CoM
+     distanceV1_c = 1./exp(distanceV1);
+     distanceV1_c(isnan(distanceV1_c)) = 0;
+     props = regionprops(true(size(distanceV1_c)), distanceV1_c, 'WeightedCentroid');
+     ty1c = props.WeightedCentroid(2); tx1c = props.WeightedCentroid(1);
+
+     distanceV2 = distance4D_tmp .* maskV2;
+     [~,minidx] = nanmin(distanceV2(:),[],1);
+     [ty2,tx2] = ind2sub([size(distance4D,1) size(distance4D,2)], minidx);
+
+     ax(ii)=subplot(1,6,ii);
+     imagesc(distance4D_tmp ,'AlphaData',roi);hold on;
+     plot(sx,sy,'rx', tx,ty,'ro', tx1c,ty1c,'yo');
+     axis equal tight xy; grid on; hold off;
+     % xlim([70 90]);ylim([20 40]);
+     if ii==1
+         title('distance from source (x)')
+         legend('source','tgt min distance','tgt CoM')
+     end
+ end
+ linkaxes(ax);
+
+ screen2png(fullfile(saveDir,subject_id{sid},['minimal_path_' type '_hmax' num2str(hmax) '_serie_' subject_id{sid}]))
+
+
+  
+    %
+    % % Set the range of rotation angles
+    % angles = -90:2:90;  % Change the increment (5 degrees) as needed
+    %
+    % % Initialize GIF file
+    % filename = 'rotating_3d_figure.gif';
+    %
+    % % Loop through each angle and capture frame for the GIF
+    % for i = 1:length(angles)
+    %     view([angles(i), 0]);
+    %
+    %     % Capture the current figure as an image
+    %     frame = getframe(gcf);
+    %     im = frame2im(frame);
+    %     [imind, cm] = rgb2ind(im, 256);
+    %
+    %     % Write to the GIF File
+    %     if i == 1
+    %         imwrite(imind, cm, filename, 'gif', 'Loopcount', inf, 'DelayTime', 0.1);
+    %     else
+    %         imwrite(imind, cm, filename, 'gif', 'WriteMode', 'append', 'DelayTime', 0.1);
+    %     end
+    % end
+    %
+    %
+close all
+end %sid
 

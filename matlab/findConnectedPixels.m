@@ -20,6 +20,11 @@ if isempty(targetPixels)
     disp('Click on pixels then press Enter when done');
     %[x, y] = getpts;
     [targetPixels(:,1), targetPixels(:,2)] = getpts;
+    if isempty(targetPixels)
+        connectedPixels=[];
+        connectedMatrix = nan(size(matrix));
+        return;
+    end
 end
 x = targetPixels(:,1);
 y = targetPixels(:,2);
@@ -61,8 +66,10 @@ end
         end
     end
 
-connectedMatrix = sub2mat(connectedPixels(:,2), ...
-    connectedPixels(:,1), size(matrix));
+if ~isempty(connectedPixels)
+    connectedMatrix = sub2mat(connectedPixels(:,2), ...
+        connectedPixels(:,1), size(matrix));
+end
 
 end
 

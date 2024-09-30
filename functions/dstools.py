@@ -214,3 +214,31 @@ def shiftPA(z_values_PA):
     z_values_PA[sum] = z_values_PA[sum] + 360
     #z_values_PA[minus] = z_values_PA[minus] - 180
     return z_values_PA
+
+def getSubjectId(loadFile):
+    #loadFile = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/data/cifti_polarAngle_all.mat'
+    
+    import re
+    import scipy
+    
+    # load polar angle data of all subjects
+    data = scipy.io.loadmat(loadFile)['cifti_polarAngle']
+    
+    field_names = data.dtype.names;
+    pattern = r".*_fit1_polarangle_msmall$"
+    filtered_strings = tuple(s for s in field_names if re.match(pattern, s))
+    
+    # Initialize an empty list to store extracted parts of strings
+    subject_id_all =[];
+    pattern = r".(\d+)_fit1_polarangle_msmall$"
+    
+    # obtain subject IDs
+    for string in filtered_strings:
+        # Use re.search() to find the pattern match in the string
+        match = re.search(pattern, string)
+        
+        # If a match is found, extract the matched part and append to the list
+        if match:
+            subject_id_all.append(match.group(1))
+    
+    return subject_id_all

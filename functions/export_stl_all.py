@@ -12,8 +12,8 @@ import os.path as osp
 import pymeshlab
 
 loadDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
+all_ids = ['avg'];#,'114823','157336','585256','581450','725751'];
 
-all_ids = ['114823','157336','585256','114823','581450','725751'];
 
 
 for ids in range(0,len(all_ids)):
@@ -22,4 +22,5 @@ for ids in range(0,len(all_ids)):
     ms = pymeshlab.MeshSet()
     ms.load_new_mesh(osp.join(thisDir,'Geom_' + str(subject_id) + '.stl'))
     ms.apply_coord_hc_laplacian_smoothing()
+    ms.apply_coord_hc_laplacian_smoothing() #apply twice for 114823
     ms.save_current_mesh(osp.join(thisDir, 'Geom_' + str(subject_id) + '_hclaplacian.stl'))

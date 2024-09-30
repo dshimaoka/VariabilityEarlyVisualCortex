@@ -20,19 +20,28 @@ import nibabel as nib
 import functions.dstools as dst
 from scipy.io import savemat
 
-rootDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex';
-loadDir = osp.join(rootDir,'data');
-#saveDir = osp.join(rootDir, 'results');
+
+doAvg = True;
+showFig = False;
+
+loadDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/data/';
+#saveDir = osp.join(loadDir, 'results');
 saveDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
 stdSphere = nib.load(osp.join(loadDir,'S1200_7T_Retinotopy181.L.sphere.32k_fs_LR.surf.gii'));
-#< CHECK IF ITS OKAY TO USE THE STANDARD SPHERE HERE
 
-#subject_id= '157336';#'146735'
-all_ids = ['114823','157336','585256','114823','581450','725751']; #from Ribeiro 2023 Fig1
+subject_id_all = dst.getSubjectId(loadDir+'cifti_polarAngle_all.mat')
+    #subject_id_all = ['114823','157336','585256','114823','581450','725751']; #from Ribeiro 2023 Fig1
 
-showFig = False;
-for ids in range(0,len(all_ids)):
-    subject_id = all_ids[ids]
+
+if doAvg:
+    PAData_mat_all = np.zeros((100,100,len(subject_id_all)));
+    ECCData_mat_all = np.zeros((100,100,len(subject_id_all)));
+    CURVData_mat_all = np.zeros((100,100,len(subject_id_all)));
+    
+
+
+for ids in range(0,len(subject_id_all)):
+    subject_id = subject_id_all[ids]
     # x-y grid for 2D matrix representation
     #grid_x, grid_y = np.mgrid[40:120, 0:60] #dorsal only
     grid_x, grid_y = np.mgrid[20:120, 0:100] #dorsal + ventral
@@ -60,7 +69,7 @@ for ids in range(0,len(all_ids)):
     PAData[sum] = PAData[sum] + 180
     PAData[minus] = PAData[minus] - 180
     PAData_L = dst.getciftiIngifti(PAData, final_mask_L);
-    PAData_mat = np.pi/180*dst.gifti2mat(stdSphere, PAData_L, final_mask_L, grid_x, grid_y); #[radian]
+    PAData_mat = dst.gifti2mat(stdSphere, PAData_L, final_mask_L, grid_x, grid_y); #[deg]
    
     if showFig:
         plt.imshow(PAData_mat, extent=[np.min(grid_x),np.max(grid_x)+1, np.min(grid_y), np.max(grid_y)+1],
@@ -103,10 +112,14 @@ for ids in range(0,len(all_ids)):
     
     
     # load 3D geometrical data of individual brain, converto gifti space, then to 2D matrix
-    # data from Fernanda through RDS
-    thisDir = osp.join(saveDir, subject_id);
     locData_mat = np.zeros((len(grid_y),len(grid_x),3))
-    locData = scipy.io.loadmat(osp.join(thisDir, 'mid_pos_L_' + subject_id + '.mat'))['mid_pos_L']
+    if doAvg:
+        locData = scipy.io.loadmat(osp.join(loadDir, 'mid_pos_L.mat'))['mid_pos_L'] #grand average
+    else:
+        thisDir = osp.join(saveDir, subject_id);
+        locData = scipy.io.loadmat(osp.join(thisDir, 'mid_pos_L_' + subject_id + '.mat'))['mid_pos_L'] # data from Fernanda through RDS
+        
+    
     #locData = data['pos'][0][0]; #sphere
     for idim in range(0,3):
         locData_tmp = dst.getciftiIngifti(locData[:,idim], final_mask_L);
@@ -118,19 +131,41 @@ for ids in range(0,len(all_ids)):
         plt.show();
     
     
-    savemat(osp.join(thisDir, 'geometry_retinotopy_' + subject_id + '.mat'), 
+    if doAvg == False:
+        savemat(osp.join(thisDir, 'geometry_retinotopy_' + subject_id + '.mat'), 
+                {'array_3d': locData_mat,'grid_x': grid_x,'grid_y': grid_y, 
+                  'grid_PA': PAData_mat, 'grid_ecc': ECCData_mat,
+                  'grid_azimuth': azimuth, 'grid_altitude': altitude,
+                  'vfs': theta, 'grid_curv': CURVData_mat,
+                  'final_mask_L': final_mask_L,'final_mask_L_d': final_mask_L_d,
+                  'final_mask_L_d_idx': final_mask_L_d_idx, 
+                  'final_mask_L_idx': final_mask_L_idx});
+    else:
+        PAData_mat_all[:,:,ids] = PAData_mat;
+        ECCData_mat_all[:,:,ids] = ECCData_mat;
+        CURVData_mat_all[:,:,ids] = CURVData_mat;
+        
+
+if doAvg:        
+    # gnd avg across subjects
+    #import cmath
+    mPA_c = np.nanmean(np.exp(complex(0,1) * PAData_mat_all / 180 * np.pi), axis=2)
+    mPAData_mat = np.arctan2(np.imag(mPA_c), np.real(mPA_c))*180/np.pi #deg
+    mECCData_mat = np.nanmean(ECCData_mat_all, 2); #deg
+    mCURVData_mat = np.nanmean(CURVData_mat_all, 2);
+        
+    # convert to alititude and azimuth [deg]
+    mazimuth, maltitude = dst.polar_to_cartesian(mECCData_mat, np.pi/180*mPAData_mat) 
+    
+    # obtain VFS map
+    theta = dst.computeFieldSign(mPAData_mat, mECCData_mat, smoothing = True, binarizing = False)
+
+    thisDir = osp.join(saveDir, 'avg');
+    savemat(osp.join(thisDir, 'geometry_retinotopy_avg.mat'), 
             {'array_3d': locData_mat,'grid_x': grid_x,'grid_y': grid_y, 
-             'grid_PA': PAData_mat, 'grid_ecc': ECCData_mat,
-             'grid_azimuth': azimuth, 'grid_altitude': altitude,
-             'vfs': theta, 'grid_curv': CURVData_mat,
-             'final_mask_L': final_mask_L,'final_mask_L_d': final_mask_L_d,
-             'final_mask_L_d_idx': final_mask_L_d_idx, 
-             'final_mask_L_idx': final_mask_L_idx});
-    
-    # {'vfs': theta, 'grid_z0_PA': mPAData, 'grid_z0_ecc': mECCData,
-    #                                'mazimuth': mazimuth, 'maltitude': maltitude,
-    #                                'grid_x': grid_x,'grid_y': grid_y, 
-    #                                'final_mask_L': final_mask_L, 'final_mask_L_d': final_mask_L_d,
-    #                                'final_mask_L_d_idx': final_mask_L_d_idx, 
-    #                                'final_mask_L_idx': final_mask_L_idx});
-    
+              'grid_PA': mPAData_mat, 'grid_ecc': mECCData_mat,
+              'grid_azimuth': mazimuth, 'grid_altitude': maltitude,
+              'vfs': theta, 'grid_curv': mCURVData_mat,
+              'final_mask_L': final_mask_L,'final_mask_L_d': final_mask_L_d,
+              'final_mask_L_d_idx': final_mask_L_d_idx, 
+              'final_mask_L_idx': final_mask_L_idx});
