@@ -151,6 +151,9 @@ if doAvg:
     #import cmath
     mPA_c = np.nanmean(np.exp(complex(0,1) * PAData_mat_all / 180 * np.pi), axis=2)
     mPAData_mat = np.arctan2(np.imag(mPA_c), np.real(mPA_c))*180/np.pi #deg
+    sum = mPAData_mat < 0
+    mPAData_mat[sum] = mPAData_mat[sum] + 360
+
     mECCData_mat = np.nanmean(ECCData_mat_all, 2); #deg
     mCURVData_mat = np.nanmean(CURVData_mat_all, 2);
         

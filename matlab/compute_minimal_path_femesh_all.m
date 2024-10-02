@@ -1,6 +1,4 @@
-
-subject_id = getSubjectid;
-%subject_id = {'avg','114823','157336','585256','581450','725751'};
+subject_id = {'avg','114823','157336','585256','581450','725751'};
 %114823: meshing failed for hmax of 2 and hmin of 1
 
 %loadDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/data/';

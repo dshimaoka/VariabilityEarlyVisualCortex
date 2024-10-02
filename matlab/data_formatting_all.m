@@ -3,11 +3,7 @@
 clear all
 
 %% extract subject ids
-load('/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/data/cifti_polarAngle_all.mat');
-fields = fieldnames(cifti_polarAngle);    
-subject_id = cellfun(@(x)sscanf(x,'x%6c_fit1_polarangle_msmall'), fields, 'UniformOutput', false);
-noempty = cellfun(@(x)~isempty(x), subject_id);
-subject_id = subject_id(noempty)';
+subject_id = getSubjectid;
 
 %subject_id = {'avg','114823','157336','585256','114823','581450','725751'};
 % saveDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/data/';
