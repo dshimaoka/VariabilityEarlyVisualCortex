@@ -5,24 +5,32 @@
 %
 % this script requires imageProcessing toolbox (imfill, imgaussfilt)
 
-subject_id =  {'avg'};%'114823','157336','585256','114823','581450','725751'};
+subject_id =  {'725751'}; %,'157336','585256','114823','581450','725751','avg'};
 % saveDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/results/';
 saveDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
 for sid = 1:length(subject_id)
 
     %% load field sign data
-    % vfsfilename = fullfile(saveDir,  subject_id{sid} ,['fieldSign_'  subject_id{sid}   '_smoothed.mat']);
-    % load(vfsfilename, 'vfs');
-    retinotopyFilename = fullfile(saveDir,  subject_id{sid} ,['geometry_retinotopy_'  subject_id{sid}   '.mat']);
-    load(retinotopyFilename, 'vfs','grid_azimuth','grid_altitude','grid_ecc')
+    retinotopyFilename = fullfile(saveDir,  subject_id{sid}, ['geometry_retinotopy_'  subject_id{sid}   '.mat']);
+    load(retinotopyFilename, 'grid_azimuth','grid_altitude','grid_ecc','grid_PA') %'vfs', 'grid_ecc'
+    grid_azimuth = pi/180 * grid_azimuth;
+    grid_altitude = pi/180 * grid_altitude;
+    mask = ~isnan(grid_altitude); %using a small mask is ciritical to obtain reasonable segmentation of vfs
+   
+    %% preprocessing retinotopy data (to be used for elastic net simulation)
+     % interpolation
+    th_retinotopy = 3;
+    oddball = (abs(grid_azimuth) > th_retinotopy*std(grid_azimuth(mask))) | (abs(grid_altitude) > th_retinotopy*std(grid_altitude(mask)));
+    interpolated = fillmissing2(grid_azimuth+1i*grid_altitude, 'natural','MissingLocations',oddball);
+    grid_azimuth_i = real(interpolated);
+    grid_altitude_i = imag(interpolated);
 
-
-    %% test
+    
+    %% define areal borders by Garrett 2014
     smoothingFac = 2;%3
     threshold = .3; %1.5
-    mask = ~isnan(vfs); %using a small mask is ciritical to obtain reasonable segmentation of vfs
-    [~,vfs_th, fig] = getHumanAreasX(grid_azimuth, grid_altitude, grid_ecc, smoothingFac, threshold, mask);
-     screen2png(fullfile(saveDir, subject_id{sid},['areaSegmentation_' subject_id{sid} '.png']));
+    [~,vfs_th, fig] = getHumanAreasX(180/pi*grid_azimuth, 180/pi*grid_altitude, smoothingFac, threshold, mask);
+    screen2png(fullfile(saveDir, subject_id{sid},['areaSegmentation_' subject_id{sid} '_test.png']));
     close all
 
     % figure;

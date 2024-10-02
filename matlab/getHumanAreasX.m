@@ -1,8 +1,8 @@
-function [im, vfs_th, fig] = getHumanAreasX(kmap_hor, kmap_vert, kmap_rad, smoothingFac, threshold, mask)
+function [im, vfs_th, fig] = getHumanAreasX(kmap_hor, kmap_vert,  smoothingFac, threshold, mask)
 
 %% INPUTS
-%kmap_hor - Map of horizontal retinotopic location
-%kmap_vert - Map of vertical retinotopic location
+%kmap_hor - Map of horizontal retinotopic location %[deg]
+%kmap_vert - Map of vertical retinotopic location %[deg]
 %pixpermm = mm/pix of the retinotopy images
 % The images in Garrett et al '14 were collected at 39 pixels/mm.  It is
 % recommended that kmap_hor and kmap_vert be down/upsampled to this value
@@ -18,13 +18,12 @@ function [im, vfs_th, fig] = getHumanAreasX(kmap_hor, kmap_vert, kmap_rad, smoot
 
 kmap_hor(~mask) = 0;
 kmap_vert(~mask) = 0;
-kmap_rad(~mask) = 0;
 
-if nargin < 4
+if nargin < 3
     smoothingFac = 3;
 end
 
-if nargin < 5
+if nargin < 4
     threshold = 1.5;
 end
 
@@ -208,7 +207,8 @@ colorbar off
 
 %% Plot eccentricity map, with [0 0] defined as V1's center-of-mass
 
-AreaInfo.kmap_rad = kmap_rad;
+%AreaInfo.kmap_rad = kmap_rad;
+AreaInfo.kmap_rad = atan(  sqrt( tan(kmap_hor*pi/180).^2 + (tan(kmap_vert*pi/180).^2)./(cos(kmap_hor*pi/180).^2)  )  )*180/pi;  %Eccentricity
 
 subplot(3,4,8)
 ploteccmap(AreaInfo.kmap_rad.*im,[0 5],pixpermm);
