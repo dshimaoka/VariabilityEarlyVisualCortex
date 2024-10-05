@@ -1,8 +1,8 @@
-function [im, vfs_th, fig] = getHumanAreasX(kmap_hor, kmap_vert,  smoothingFac, threshold, mask)
+function [im, vfs_th, VFS, fig] = getHumanAreasX(kmap_hor, kmap_vert,  smoothingFac, threshold, mask)
 
 %% INPUTS
-%kmap_hor - Map of horizontal retinotopic location %[deg]
-%kmap_vert - Map of vertical retinotopic location %[deg]
+%kmap_hor - Map of horizontal retinotopic location %[deg], surrounded by nans
+%kmap_vert - Map of vertical retinotopic location %[deg], surrounded by nans
 %pixpermm = mm/pix of the retinotopy images
 % The images in Garrett et al '14 were collected at 39 pixels/mm.  It is
 % recommended that kmap_hor and kmap_vert be down/upsampled to this value
@@ -16,16 +16,26 @@ function [im, vfs_th, fig] = getHumanAreasX(kmap_hor, kmap_vert,  smoothingFac, 
 %cf. https://au.mathworks.com/help/images/marker-controlled-watershed-segmentation.html
 
 
+if nargin < 5
+    mask = ~isnan(kmap_hor);
+end
+
 kmap_hor(~mask) = 0;
 kmap_vert(~mask) = 0;
+
+if nargin < 4
+    threshold = 1.5;
+end
 
 if nargin < 3
     smoothingFac = 3;
 end
 
-if nargin < 4
-    threshold = 1.5;
-end
+structuringElementRadius = 1;
+structuringElementRadius2 = 1;
+doImopen = false; %step 6
+doThinning = true; %step 7
+makeBoundary = false;
 
 %% Compute visual field sign map
 
@@ -35,11 +45,6 @@ mmperpix = 1/pixpermm;
 [dhdx dhdy] = gradient(kmap_hor);
 [dvdx dvdy] = gradient(kmap_vert);
 
-% dhdy = double(dhdy);
-% dhdx = double(dhdx);
-% dvdy = double(dvdy);
-% dvdx = double(dvdx);
-
 graddir_hor = atan2(dhdy,dhdx);
 graddir_vert = atan2(dvdy,dvdx);
 
@@ -48,9 +53,25 @@ VFS = sin(angle(vdiff)); %Visual field sign map
 id = find(isnan(VFS));
 VFS(id) = 0;
 
+%% smoothing VFS using opening-by-reconstruction
+I = VFS;
+SE = strel('disk',structuringElementRadius);
+
+%opening-by-reconstruction	
+Ie = imerode(I,SE);
+Iobr = imreconstruct(Ie,I);
+
+%Opening-Closing by Reconstruction
+Iobrd = imdilate(Iobr,SE);
+Iobrcbr = imreconstruct(imcomplement(Iobrd),imcomplement(Iobr));
+Iobrcbr = imcomplement(Iobrcbr);
+imagesc(Iobrcbr)
+
+
 hh = fspecial('gaussian',size(VFS),smoothingFac); 
 hh = hh/sum(hh(:));
-VFS = ifft2(fft2(VFS).*abs(fft2(hh)));  %Important to smooth before thresholding below
+%VFS = ifft2(fft2(VFS).*abs(fft2(hh)));  %Important to smooth before thresholding below
+VFS = ifft2(fft2(Iobrcbr).*abs(fft2(hh)));
 
 
 %% Plot retinotopic maps
@@ -60,42 +81,42 @@ ydom = (0:size(kmap_hor,1)-1)*mmperpix;
 
 fig=figure(10); clf
 set(fig,'position',[0 0 1980 1080]);
-subplot(3,4,1)
+ax(1)=subplot(3,4,1);
 imagesc(xdom,ydom,kmap_hor,[-10 10]),
-axis image, colorbar
+axis xy, colorbar
 title('1. Horizontal (azim deg)')
 
-subplot(3,4,2)
+ax(2)=subplot(3,4,2);
 imagesc(xdom,ydom,kmap_vert,[-10 10]),
-axis image, colorbar
+axis xy, colorbar
 title('2. Vertical (alt deg)')
 
 %% Plotting visual field sign and its threshold
 
-figure(10), subplot(3,4,3), 
-imagesc(xdom,ydom,VFS), axis image
+figure(10), ax(3)=subplot(3,4,3);
+imagesc(xdom,ydom,VFS), axis xy
 colorbar
 title(['3. VFS after filtering: ' num2str(smoothingFac)])
 
 gradmag = abs(VFS);
-figure(10), subplot(3,4,4), 
+figure(10), ax(4)=subplot(3,4,4); 
 
 %threshSeg = threshold*nanstd(VFS(:));
 %imseg = (sign(gradmag-threshSeg/2) + 1)/2;  %threshold visual field sign map at +/-1.5sig
-[~, im_final] = getVisualBorder(VFS,threshold,1,2);
+[~, im_final] = getVisualBorder_ds(VFS,threshold,structuringElementRadius,structuringElementRadius2);
 imseg = abs(im_final);
 id = find(imseg);
 imdum = imseg.*VFS; imdum(id) = imdum(id)+1.1;
 
 ploteccmap(imdum,[.1 2.1],pixpermm);
 colorbar off
-axis image
+axis xy
 title(['4. +/' num2str(threshold) 'x s.d. ']) 
 
 
 patchSign = getPatchSign(imseg,VFS);
 
-figure(10), subplot(3,4,5),
+figure(10), ax(5)=subplot(3,4,5),
 ploteccmap(patchSign,[1.1 2.1],pixpermm);
 title('watershed')
 colorbar off
@@ -104,14 +125,14 @@ title('5. Threshold patches')
 id = find(patchSign ~= 0);
 patchSign(id) = sign(patchSign(id) - 1);
 
-doImopen = false;
+
 if doImopen
     SE = strel('disk',2,0);
     imseg = imopen(imseg,SE);
 
     patchSign = getPatchSign(imseg,VFS);
 
-    figure(10), subplot(3,4,6),
+    figure(10), ax(6)=subplot(3,4,6),
     ploteccmap(patchSign,[1.1 2.1],pixpermm);
     title('watershed')
     colorbar off
@@ -120,6 +141,7 @@ end
 
 
 %% Make boundary of visual cortex
+if makeBoundary
 
 %First pad the image with zeros because the "imclose" function does this
 %wierd thing where it tries to "bleed" to the edge if the patch near it
@@ -161,21 +183,25 @@ imbound(id) = 1;
 
 imbound = imbound .* mask;
 
+else
+    imbound = imdilate(mask, strel('disk',1));
+end
+
 imseg = imseg.*imbound;
 
 %This is important in case a patch reaches the edge... we want it to be
 %smaller than imbound
 imseg(:,1:2) = 0; imseg(:,end-1:end) = 0; imseg(1:2,:) = 0;  imseg(end-1:end,:) = 0; 
 
+
 if doImopen
-    figure(10), subplot(3,4,6)
+    figure(10), ax(6)=subplot(3,4,6)
     hold on
     contour(xdom,ydom,imbound,[.5 .5],'k')
 end
 
 %% Morphological thinning to create borders that are one pixel wide
-
-%Thinning
+if doThinning
 bordr = getThinning(imbound, imseg);
 
 %Turn border map into patches
@@ -193,43 +219,43 @@ im = sign(im);
 % end
 
 
-%% Plot stuff
-
 patchSign = getPatchSign(im,VFS);
 
-figure(10), subplot(3,4,7),
+figure(10), ax(7)=subplot(3,4,7),
 ploteccmap(patchSign,[1.1 2.1],pixpermm);
 hold on, 
 contour(xdom,ydom,im,[.5 .5],'k')
 title('7. Thinning')
 colorbar off
-
+else 
+    im = imseg;
+    patchSign = getPatchSign(im,VFS);
+end
 
 %% Plot eccentricity map, with [0 0] defined as V1's center-of-mass
 
 %AreaInfo.kmap_rad = kmap_rad;
 AreaInfo.kmap_rad = atan(  sqrt( tan(kmap_hor*pi/180).^2 + (tan(kmap_vert*pi/180).^2)./(cos(kmap_hor*pi/180).^2)  )  )*180/pi;  %Eccentricity
 
-subplot(3,4,8)
+ax(8)=subplot(3,4,8)
 ploteccmap(AreaInfo.kmap_rad.*im,[0 5],pixpermm);
 hold on
 contour(xdom,ydom,im,[.5 .5],'k')
-axis image
+axis xy
 title('8. Eccentricity map')
 
 
 %% ID redundant patches and split them (criterion #2)
 
-coverageTh = .01;
-im = splitPatchesX(im,kmap_hor,kmap_vert,AreaInfo.kmap_rad,pixpermm, coverageTh); 
+im = splitPatchesX(im,kmap_hor,kmap_vert,AreaInfo.kmap_rad,pixpermm); 
 
-%Remake the border with thinning
-bordr = getThinning(imbound, im);
-
-%Turn border map into patches
-im = bwlabel(1-bordr,4);
-im(find(im == 1)) = 0;
-im = sign(im);
+    % %Remake the border with thinning
+    % bordr = getThinning(imbound, im);
+    % 
+    % %Turn border map into patches
+    % im = bwlabel(1-bordr,4);
+    % im(find(im == 1)) = 0;
+    % im = sign(im);
 
 if doImopen
     SE = strel('disk',2);
@@ -240,9 +266,19 @@ end
 
 [im fuseflag] = fusePatchesX(im,kmap_hor,kmap_vert,pixpermm); 
 
-figure(10), subplot(3,4,9),
+figure(10), ax(9)=subplot(3,4,9),
 ploteccmap(im.*AreaInfo.kmap_rad,[0 5],pixpermm);
 title('9. Split redundant patches. Fuse exclusive patches.')
+
+
+%% trim small patches
+imlab = bwlabel(im,4);
+for q=1:numel(unique(imlab))
+    if sum(im(imlab==q)) < 10 %#pixels
+        im(imlab==q) = 0;
+    end
+end
+
 
 vfs_th = getPatchSign(im,VFS);
 vfs_th(vfs_th == 2.1) = 1;
@@ -263,11 +299,11 @@ hold on,
 contour(xdom,ydom,im,[.5 .5],'k')
 
 [patchSign areaSign] = getPatchSign(im,VFS);
-figure(10), subplot(3,4,10)
+figure(10), ax(10)=subplot(3,4,10)
 ploteccmap(patchSign,[1.1 2.1],pixpermm); colorbar off
 hold on
 contour(xdom,ydom,im,[.5 .5],'k')
-axis image
+axis xy
 
 title('10. visual areas')
 
@@ -275,20 +311,20 @@ title('10. visual areas')
 %% Plot contours
 
 figure(10)
-subplot(3,4,11)
+ax(11)=subplot(3,4,11)
 contour(xdom,ydom,kmap_vert.*im,[-90:4:90],'r')
 hold on
 contour(xdom,ydom,kmap_hor.*im,[-90:4:90],'k')
 axis ij
 title('Red: Vertical Ret;  Black: Horizontal Ret')
-axis image
+axis xy
 xlim([xdom(1) xdom(end)]), ylim([ydom(1) ydom(end)])
 
 %% Get magnification factor images
 [JacIm prefAxisMF Distort] = getMagFactors(kmap_hor,kmap_vert,pixpermm);
 
 figure(10)
-subplot(3,4,12)
+ax(12)=subplot(3,4,12)
 plotmap(im.*sqrt(1./abs(JacIm)),[sqrt(.000001) sqrt(.003)],pixpermm);  %This doesn't work
 title('Mag fac (mm2/deg2)')
 
@@ -301,7 +337,7 @@ Distort = Distort(DdomY,DdomX);
 figure(10)
 subplot(3,4,12)
 hold on,
-contour(xdom,ydom,im,[.5 .5],'k')
+contour(xdom,ydom,im,[.5 .5],'k');
 for i = 1:length(DdomX)
     for j = 1:length(DdomY)
         
@@ -314,7 +350,7 @@ for i = 1:length(DdomX)
         
     end
 end
-
+linkaxes(ax(:));
 
 
 function imout = ploteccmap(im,rng,pixpermm)
@@ -351,7 +387,7 @@ for i = 1:dim(1)
 end
 
 
-image(xdom,ydom,imout), axis image
+image(xdom,ydom,imout), axis xy
 
 eccdom = round(linspace(rng(1),rng(2),5));
 for i = 1:length(eccdom)
@@ -395,7 +431,7 @@ for i = 1:dim(1)
 end
 
 
-image(xdom,ydom,imout), axis image
+image(xdom,ydom,imout), axis xy
 
 eccdom = round(linspace(rng(1),rng(2),5));
 for i = 1:length(eccdom)
@@ -428,3 +464,6 @@ function bordr = getThinning(imbound, imseg)
 bordr = imbound - imerode(imseg<0, strel('disk',1)) - imerode(imseg>0, strel('disk',1)); %more robust
 bordr = bwmorph(bordr,'thin',Inf);
 bordr = bwmorph(bordr,'spur',4);
+
+bordr = bwmorph(bordr,'thin',Inf);
+

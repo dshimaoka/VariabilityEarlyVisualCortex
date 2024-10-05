@@ -31,7 +31,7 @@ import time
 
 
 
-all_ids = ['avg']#['114823','157336','585256','581450','725751']; #from Ribeiro 2023 Fig1
+all_ids = ['avg','114823','157336','585256','581450','725751']; #from Ribeiro 2023 Fig1
 loadDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
 
 
@@ -259,8 +259,8 @@ for ids in range(0,len(all_ids)):
     
     #sess = tf.Session()
     
-    for i1 in range(0, 5):#0,5
-        for i2 in range(0, 5):#0,5
+    for i1 in range(0, 6):#0,5
+        for i2 in range(0, 6):#0,5
             #b1 = 0.02*1.6**i1 #smoothness
             #b2 = 0.02*1.6**i2 #inter-areal path length
             b1 = 0.01*2**i1

@@ -2,6 +2,8 @@ function [im fuseflag] = fusePatchesX(im,kmap_hor,kmap_vert,pixpermm)
 
 %Fuse patches if they are adjacent, the same sign, and unique regions of visual space
 
+OLapTh = 0.15;%0.1
+
 xsize = size(kmap_hor,2)/pixpermm;  %Size of ROI mm
 ysize = size(kmap_hor,1)/pixpermm; 
 xdum = linspace(0,xsize,size(kmap_hor,2)); ydum = linspace(0,ysize,size(kmap_hor,1)); 
@@ -24,10 +26,11 @@ kmap_vertS = ifft2(fft2(kmap_vert).*abs(fft2(hh)));
 
 %%%Make Interpolated data to construct the visual space representations%%%
 dim = size(kmap_horS);
-U = 3;
+U = 3; %upsampling factor
+pixSize = 0.2;
 xdum = linspace(xdom(1,1),xdom(1,end),U*dim(2)); ydum = linspace(ydom(1,1),ydom(end,1),U*dim(1));
 [xdomI ydomI] = meshgrid(xdum,ydum); %upsample the domain
-sphdom = -15:.2:15;%-90:90;  %create the domain for the sphere
+sphdom = -20:pixSize:20;%-90:90;  %create the domain for the sphere
 kmap_hor_interp = interp2(xdom,ydom,kmap_horS,xdomI,ydomI,'spline');
 kmap_vert_interp = interp2(xdom,ydom,kmap_vertS,xdomI,ydomI,'spline');
 kmap_horI_idx = discretize(kmap_hor_interp, sphdom);
@@ -106,7 +109,7 @@ for i = 1:length(spCov)
                 %Norm = sum(sign(spCov{i}(:) + spCov{j}(:)));
                 OLap = (spCov{i}(:)'*spCov{j}(:))/Norm; % Percent of the smaller one that overlaps 
                 
-                if OLap < .1 %If there is very little visual overlap (i.e. not redundant), fuse them
+                if OLap < OLapTh %If there is very little visual overlap (i.e. not redundant), fuse them
                     
                     SE = strel('disk',5,0);
                     patchFuse = imclose(patch1+patch2,SE);
@@ -122,10 +125,13 @@ for i = 1:length(spCov)
                     figure,
                     subplot(2,2,1), 
                     ploteccmap((patch1+patch2).*kmap_hor,[min(kmap_hor(find(patch1+patch2))) max(kmap_hor(find(patch1+patch2)))],pixpermm);
+                    title('azimuth of two patches on brain');
+                    
                     subplot(2,2,2), 
                     ploteccmap((patch1+patch2).*kmap_vert,[min(kmap_vert(find(patch1+patch2))) max(kmap_vert(find(patch1+patch2)))],pixpermm);
-                    subplot(2,2,3), 
+                    title('altitude of two patches on brain');
                     
+                    subplot(2,2,3), 
                     contour(domX(1,:)*180/pi,(domY(:,1))*180/pi,ecc,[.1 25 50 75],'k'), axis image
                     hold on
                     contour(domX(1,:)*180/pi,(domY(:,1))*180/pi,ax,[-135:45:180],'k'), axis image
@@ -136,12 +142,15 @@ for i = 1:length(spCov)
                     [c h] = contour(domX(1,:)*180/pi,(domY(:,1))*180/pi,spCov{j},[.5 .5],'LineColor',[0 0 1]);
                     set(h,'LineWidth',4)  %its buggy if I try to do this above
                     xlabel('azimuth'), ylabel('altitude')
+                    title('Coverage in visual field');
                     title(['Overlap % = ' num2str(OLap)])                    
                     
                     %imagesc((spCov{i} + spCov{j}))
                     subplot(2,2,4), 
                     imagesc(1-patchFuse), %colormap gray
-                    axis image                    
+                    title('fused patch on brain')
+                    axis image     
+
                     
                     % SE = strel('disk',1,0);
                     % im = imopen(im,SE); %this can disconnect the connected patches
@@ -169,6 +178,7 @@ function [spCov JacCoverage ActualCoverage MagFac] = overRep(kmap_hor,kmap_vert,
 pixpermm = pixpermm*U;
 
 N = length(sphdom);
+pixSize = median(diff(sphdom));
 
 posneg = sign(mean(Jac(find(patch))));
 id = find(sign(Jac)~=posneg | Jac == 0);
@@ -176,7 +186,7 @@ Jac(id) = 0;
 patch(id) = 0;
     
 idpatch = find(patch);
-JacCoverage = abs(sum(abs(Jac(idpatch))))/pixpermm^2; %deg^2
+JacCoverage = abs(sum(abs(Jac(idpatch))))/pixpermm^2; %deg^2 
 
 % sphlocX = (kmap_hor(idpatch));
 % sphlocX = sphlocX-sphdom(1)+1;
@@ -191,14 +201,14 @@ for pp = 1:numel(idpatch)
 end
 sphlocVec = sub2ind(size(sphX),sphlocX, sphlocY);
 
-spCov = zeros(size(sphX)); %a matrix that represents the sphreen
+spCov = zeros(size(sphX)); %a matrix that represents the visual field
 spCov(sphlocVec) = 1;
 spCov = imfill(spCov);
-SE = strel('disk',1,0);
+SE = strel('disk', round(1/pixSize),0);
 spCov = imclose(spCov,SE);
 spCov = imfill(spCov);
 %spCov = medfilt2(spCov,[3 3]);
-ActualCoverage = sum(spCov(:)); %deg^2
+ActualCoverage = sum(spCov(:)).*(pixSize^2); %deg^2
 MagFac = ActualCoverage/length(idpatch);
 
 

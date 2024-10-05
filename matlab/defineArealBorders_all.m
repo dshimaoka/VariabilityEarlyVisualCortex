@@ -5,32 +5,63 @@
 %
 % this script requires imageProcessing toolbox (imfill, imgaussfilt)
 
-subject_id =  {'725751'}; %,'157336','585256','114823','581450','725751','avg'};
+subject_id =  {'157336','585256','114823','581450','725751','avg'};
 % saveDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/results/';
+%ng mask 
+% 725751: V1-V3 connected w threshold = .3
 saveDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
-for sid = 1:length(subject_id)
+for sid = [4 6]%1:length(subject_id)
 
     %% load field sign data
     retinotopyFilename = fullfile(saveDir,  subject_id{sid}, ['geometry_retinotopy_'  subject_id{sid}   '.mat']);
-    load(retinotopyFilename, 'grid_azimuth','grid_altitude','grid_ecc','grid_PA') %'vfs', 'grid_ecc'
+    load(retinotopyFilename, 'grid_azimuth','grid_altitude') %'vfs', 'grid_ecc'
     grid_azimuth = pi/180 * grid_azimuth;
     grid_altitude = pi/180 * grid_altitude;
-    mask = ~isnan(grid_altitude); %using a small mask is ciritical to obtain reasonable segmentation of vfs
-   
+    mask_ribeiro = ~isnan(grid_altitude); %generally this produces many small patches near mask border
+
     %% preprocessing retinotopy data (to be used for elastic net simulation)
-     % interpolation
-    th_retinotopy = 3;
-    oddball = (abs(grid_azimuth) > th_retinotopy*std(grid_azimuth(mask))) | (abs(grid_altitude) > th_retinotopy*std(grid_altitude(mask)));
-    interpolated = fillmissing2(grid_azimuth+1i*grid_altitude, 'natural','MissingLocations',oddball);
+
+    % interpolation using spatial derivative
+    th_retinotopy = 2; %1;
+    [dhdx, dhdy] = gradient(grid_azimuth);
+    [dvdx, dvdy] = gradient(grid_altitude);
+    tmp = (abs(dhdx)+abs(dhdy)+abs(dvdx)+abs(dvdy));
+    oddball = abs(tmp) > th_retinotopy*std(tmp(~isnan(tmp))); 
+   
+
+    % define new mask
+    SE = strel('disk', 2,0);
+    oddball = imclose(oddball,SE);
+    oddball = imfill(oddball, 'hole');
+    oddball_all = imdilate(oddball,SE); %to include mask boundary
+    
+    [labeledImage, numComponents] = bwlabel(oddball_all | ~mask_ribeiro);
+    labelsInOddball_all = unique(labeledImage(oddball_all));
+    labels_outer = unique(labeledImage(~mask_ribeiro));
+    labels_inner = setxor(labelsInOddball_all, labels_outer);
+
+    oddball_inner = ismember(labeledImage, labels_inner);
+    oddball_outer = ismember(labeledImage, labels_outer);
+    mask_tmp = mask_ribeiro & ~oddball_outer; 
+
+    [labeledImage, numComponents] = bwlabel(mask_tmp);
+    stats = regionprops(labeledImage, 'Area');
+    allAreas = [stats.Area];  % Extract areas of all components
+    [~, largestComponentIdx] = max(allAreas);
+
+    %Create a mask with only the largest component
+    mask = (labeledImage == largestComponentIdx);
+
+
+     interpolated = fillmissing2(grid_azimuth+1i*grid_altitude, 'linear','MissingLocations',oddball_inner);
     grid_azimuth_i = real(interpolated);
     grid_altitude_i = imag(interpolated);
 
-    
     %% define areal borders by Garrett 2014
     smoothingFac = 2;%3
-    threshold = .3; %1.5
-    [~,vfs_th, fig] = getHumanAreasX(180/pi*grid_azimuth, 180/pi*grid_altitude, smoothingFac, threshold, mask);
-    screen2png(fullfile(saveDir, subject_id{sid},['areaSegmentation_' subject_id{sid} '_test.png']));
+    threshold = .3; %.3
+    [~,vfs_th, vfs, fig] = getHumanAreasX(180/pi*grid_azimuth_i, 180/pi*grid_altitude_i, smoothingFac, threshold, mask);
+    screen2png(fullfile(saveDir, subject_id{sid},['areaSegmentation_' subject_id{sid} '.png']));
     close all
 
     % figure;
@@ -57,8 +88,15 @@ for sid = 1:length(subject_id)
         [connectedPixels{ii}, connectedMatrix{ii}] = ...
             findConnectedPixels(vfs_th, label{ii});
         close;
+
+        % fuse neighboring areas cf. fusePatchesX
+        SE = strel('disk',1,0);
+        connectedMatrix{ii} = imerode(imdilate(connectedMatrix{ii}, SE),SE);
+        
+        % fill holes
         areaMatrix{ii} = imfill(connectedMatrix{ii}.*mask==1, 'holes');
     end
+    close all;
 
     % %for each pixel deemed as vfs_th=0, find nearest areas, assign it to
     % %one of the areas whos vfs values are closer
@@ -70,6 +108,7 @@ for sid = 1:length(subject_id)
     % 
     % vfs_th(areaMarix{ii})
 % end
+
 
     %% visualization
     figure('position',[0 0 700 1500]);
@@ -89,7 +128,7 @@ for sid = 1:length(subject_id)
     end
     legend(label);
     axis xy equal;
-    screen2png(fullfile(saveDir,  subject_id{sid}, ['arealBorder_' subject_id{sid}]));
+    screen2png(fullfile(saveDir,  subject_id{sid}, ['arealLabels_' subject_id{sid}]));
 
 
     %% save results

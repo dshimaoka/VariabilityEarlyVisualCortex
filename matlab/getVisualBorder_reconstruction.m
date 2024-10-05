@@ -1,4 +1,4 @@
-function [signMapThreshold, im_final] = getVisualBorder(signMap,...
+function [signMapThreshold, im_final] = getVisualBorder_reconstruction(signMap,...
     threshold,structuringElementRadius,structuringElementRadius2)
 %[signMap, signMapThreshold, im_final] = getVisualBorder(signMap,...
 %    threshold,structuringElementRadius,structuringElementRadius2)
@@ -7,6 +7,7 @@ function [signMapThreshold, im_final] = getVisualBorder(signMap,...
 %
 % Implementation of Garrett et al. (2014) 
 % INPUTS:
+% signMap: smoothed visual field sign map
 % threshold: threshold to get visual field patch from the sign map (eq.2 of
 % Garrett)
 % structuringElementRadius: size of morphorogical opening after thresholding
@@ -16,6 +17,7 @@ function [signMapThreshold, im_final] = getVisualBorder(signMap,...
 % contour(im_final, 'k');
 
 debug = true;
+doImclose = false;
 
 	if nargin == 1
 		threshold = 0.75;
@@ -45,6 +47,15 @@ debug = true;
 	signMapBinary = abs(signMapThresholdO);
     if debug; subplot(332); imagesc(signMapThresholdO); axis equal tight; title('imopen'); end
 
+    % % test 1: imreconstruct on thresholded signMap
+    % Ie = imerode(signMapThresholdO,structuringElement);
+    % Iobr = imreconstruct(Ie, signMapThreshold);
+    % %Iobr == signMapThreshold
+    % 
+    % % test 2: imreconstruct on signMap
+    % Ie = imerode(signMap,structuringElement);
+    % Iobr = imreconstruct(Ie, signMap);
+    % %difference between Iobr and signMap is negligible
 
 	%Visual cortex border = Dilate(Open(Close(abs(Sthresh)))
 	temp = imclose(signMapBinary,structuringElement2);
@@ -53,16 +64,20 @@ debug = true;
     if debug; subplot(334); imagesc(temp2); axis equal tight; title('imopen again');end
 	visualCortexBorder = imdilate(temp2,structuringElement2);	%supposed to join boundaries of visual cortices
 	visualCortexBorder = imfill(visualCortexBorder);
-    if debug; subplot(335); imagesc(visualCortexBorder); axis equal tight; tilte('imdilate and imfill');end
+    if debug; subplot(335); imagesc(visualCortexBorder); axis equal tight; title('imdilate and imfill');end
 
 
 	%border = visualCortexBorder - signMapBinary;
     border = visualCortexBorder - imerode(signMapThreshold<0, strel('disk',1)) - imerode(signMapThreshold>0, strel('disk',1));
     if debug; subplot(336); imagesc(border); axis equal tight; title('border by imerode');end
 	border = abs(border);
-	border = imclose(border, structuringElement);
-    if debug; subplot(337); imagesc(border); axis equal tight; title('imclose'); end
-	border = bwmorph(border,'thin',Inf);
+    
+    if doImclose
+    	border = imclose(border, structuringElement);
+        if debug; subplot(337); imagesc(border); axis equal tight; title('imclose'); end
+    end
+
+    border = bwmorph(border,'thin',Inf);
     if debug; subplot(338); imagesc(border); axis equal tight; title('thin'); end
 	border = bwmorph(border,'spur',1);
     if debug; subplot(339); imagesc(border); axis equal tight; title('spur');end

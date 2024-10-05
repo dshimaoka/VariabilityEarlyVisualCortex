@@ -1,15 +1,26 @@
-function im = splitPatchesX(im,kmap_hor,kmap_vert,kmap_rad,pixpermm, coverageTh)
+function im = splitPatchesX(im,kmap_hor,kmap_vert,kmap_rad,pixpermm)
+
+debug = false;
+CovOverlapTh = 1.1;%as described in Garrett 2014
+smoothInSpace = false;
 
 xsize = size(kmap_hor,2)/pixpermm;  %Size of ROI mm
 ysize = size(kmap_hor,1)/pixpermm; 
 xdum = linspace(0,xsize,size(kmap_hor,2)); ydum = linspace(0,ysize,size(kmap_hor,1)); 
 [xdom ydom] = meshgrid(xdum,ydum); %two-dimensional domain
 
-kmap_rad = smoothPatchesX(kmap_rad,im); %smooth the larger patches
+if smoothInSpace
+    kmap_rad = smoothPatchesX(kmap_rad,im); %smooth the larger patches
 
-hh = fspecial('gaussian',size(kmap_hor),2);
-kmap_horS = ifft2(fft2(kmap_hor).*abs(fft2(hh)));
-kmap_vertS = ifft2(fft2(kmap_vert).*abs(fft2(hh)));
+    hh = fspecial('gaussian',size(kmap_hor),2);
+    kmap_horS = ifft2(fft2(kmap_hor).*abs(fft2(hh)));
+    kmap_vertS = ifft2(fft2(kmap_vert).*abs(fft2(hh)));
+else
+    kmap_rad = kmap_rad.*im;
+    kmap_rad(im==0) = 45;
+    kmap_horS = kmap_hor;
+    kmap_vertS = kmap_vert;
+end
 
 [dhdx dhdy] = gradient(kmap_horS);
 [dvdx dvdy] = gradient(kmap_vertS);
@@ -18,9 +29,10 @@ Jac = (dhdx.*dvdy - dvdx.*dhdy)*pixpermm^2; %deg^2/mm^2  %magnification factor i
 %%%Make Interpolated data to construct the visual space representations%%%
 dim = size(kmap_horS);
 U = 3; %upsample factor
+pixSize = .2; %pixel size in [deg] in visual field
 xdum = linspace(xdom(1,1),xdom(1,end),U*dim(2)); ydum = linspace(ydom(1,1),ydom(end,1),U*dim(1));
 [xdomI ydomI] = meshgrid(xdum,ydum); %upsample the domain
-sphdom = -15:.2:15;%-90:90;  %create the domain for the sphere
+sphdom = -20:pixSize:20;%-90:90;  %create the domain for the sphere
 kmap_hor_interp = interp2(xdom,ydom,kmap_horS,xdomI,ydomI,'spline');
 kmap_vert_interp = interp2(xdom,ydom,kmap_vertS,xdomI,ydomI,'spline');
 kmap_horI_idx = discretize(kmap_hor_interp, sphdom);
@@ -58,14 +70,6 @@ end
 clear spCov
 
 R = 15;%30; %Find local min within central R deg
-
-%%%%First limit patches to a certain eccentricity, R
-imlab = bwlabel(im,4); 
-imdom = unique(imlab);
-centerPatch = getCenterPatch(kmap_rad,im,R);
-for q = 1:length(imdom)-1 %loop through each patch ("visual area")    
-    im = resetPatch(im,centerPatch,imlab,q);       
-end
 
 imI = round(interp2(xdom,ydom,im,xdomI,ydomI,'nearest')); %interpolate to be the same size as the maps
 
@@ -105,12 +109,26 @@ for q = 1:length(imdom)-1 %loop through each patch ("visual area")
 
      
         
-        if CovOverlap > .999
+        if CovOverlap > CovOverlapTh%.999
             
             %figure, imagesc(dumpatch)
+            figure
+            subplot(2,2,1),
+            imagesc(dumpatch.*kmap_hor); colorbar;
+            title('azimuth of redundant patch on brain');
+
+            subplot(2,2,2),
+            imagesc(dumpatch.*kmap_vert); colorbar;
+            title('altitude');
             
-            hor_cent = median(kmap_hor(find(dumpatch)));
-            vert_cent = median(kmap_vert(find(dumpatch)));
+           subplot(2,2,3);
+           domX = sphX*pi/180; %azimuth
+           domY = sphY*pi/180; %altitude
+            [c h] = contour(domX(1,:)*180/pi,(domY(:,1))*180/pi,spCov,[.5 .5],'LineColor',[1 0 0]);
+           title('coverage in visual field');      
+
+            hor_cent = 0; %median(kmap_hor(find(dumpatch)));
+            vert_cent = 0; %median(kmap_vert(find(dumpatch)));
             
             kmap_rad_cent = sqrt((kmap_hor-hor_cent).^2 + (kmap_vert-vert_cent).^2);
             
@@ -119,9 +137,11 @@ for q = 1:length(imdom)-1 %loop through each patch ("visual area")
 
             [Nmin minpatch centerPatch2 Rdiscrete] = getNlocalmin(idpatch,R,kmap_rad_dum);
 
-            [im splitflag Nsplit] = resetPatch(im,centerPatch2,imlab,q);
+             %executes splitting according to centerPatch2
+            % [im splitflag Nsplit] = resetPatch(im,centerPatch2,imlab,q);
+            im = im - dumpatch + centerPatch2;
+          
         end
-
     end
 
 
@@ -130,27 +150,23 @@ for q = 1:length(imdom)-1 %loop through each patch ("visual area")
         dumpatch = zeros(size(im)); dumpatch(id) = 1;
 
         figure,
-        subplot(1,3,1), ploteccmap(dumpatch.*kmap_rad_cent,[0 45],1,pixpermm);
+        subplot(1,3,1), ploteccmap(dumpatch.*kmap_rad_cent,[0 R],1,pixpermm);
         title('Smoothed eccentricity map'), colorbar off
         ylabel('mm'), xlabel('mm')
 
         id = find(Rdiscrete == median(Rdiscrete(:))); Rdiscrete(id) = 0;
-        subplot(1,3,2), ploteccmap(dumpatch.*Rdiscrete,[0 45],1,pixpermm);
+        subplot(1,3,2), ploteccmap(dumpatch.*Rdiscrete,[0 R],1,pixpermm);
         hold on, contour(xdom,ydom,minpatch,[.5 .5],'k')
         title(['Discretized map; ' num2str(Nmin) ' minima found']), colorbar off
 
-        subplot(1,3,3), ploteccmap(dumpatch.*kmap_rad_cent.*im,[0 45],1,pixpermm);
+        subplot(1,3,3), ploteccmap(dumpatch.*kmap_rad_cent.*im,[0 R],1,pixpermm);
         title('Flood the patch with watershed')
-
-
     end
-
-
 end
 
 
 
-%% Compute level of over-representation
+%% Compute level of over-representation after splitting
 
 imlab = bwlabel(im,4); 
 imdom = unique(imlab);
@@ -159,7 +175,7 @@ imI = round(interp2(xdom,ydom,im,xdomI,ydomI,'nearest')); %interpolate to be the
 imI(find(isnan(imI))) = 0;
 imlabI = bwlabel(imI,4);
 
-R = 10;%35;
+%R = 35;
 
 centerPatch = getCenterPatch(kmap_rad,im,R);
 centerPatchI = getCenterPatch(kmap_radI,imI,R);
@@ -182,27 +198,31 @@ for q = 1:length(imdom)-1 %loop through each patch ("visual area")
     CovOverlap = JacCoverage(q)/ActualCoverage(q);
 
     % if JacCoverage/(pi*R^2) < .01 %get rid of the areas with practically no screen coverage
-    if CovOverlap > 1.05 | JacCoverage(q) <  coverageTh
-
-        id = find(imlab == q);
-        im(id) = 0;
-    end
+    % if JacCoverage(q) <  coverageTh | CovOverlap > 1.05 
+    % 
+    %     id = find(imlab == q);
+    %     im(id) = 0;
+    % end
 
 end
 
-figure,
-scatter(JacCoverage,ActualCoverage)
-hold on
-plot([0 max(JacCoverage)], [0 max(JacCoverage)],'k')
-xlabel('Jacobian integral (deg^2)')
-ylabel('Actual Coverage (deg^2)')
+if debug
+    figure,
+    scatter(JacCoverage,ActualCoverage)
+    hold on
+    plot([0 max(JacCoverage)], [0 max(JacCoverage)],'k')
+    xlabel('Jacobian integral (deg^2)')
+    ylabel('Actual Coverage (deg^2)')
+end
 
 function [spCov JacCoverage ActualCoverage MagFac] = overRep(kmap_hor,kmap_vert,U,...
     Jac,patch,sphdom,sphX,pixpermm)
+% ActualCoverage becomes larger when pixSize<1 but JacCoverage is constant
 
 pixpermm = pixpermm*U;
 
 N = length(sphdom);
+pixSize = median(diff(sphdom));
 
 posneg = sign(mean(Jac(find(patch))));
 id = find(sign(Jac)~=posneg | Jac == 0);
@@ -212,11 +232,6 @@ patch(id) = 0;
 idpatch = find(patch);
 JacCoverage = abs(sum(abs(Jac(idpatch))))/pixpermm^2; %deg^2
 
-% sphlocX = (kmap_hor(idpatch));
-% sphlocX = sphlocX-sphdom(1)+1;
-% sphlocY = (kmap_vert(idpatch));
-% sphlocY = sphlocY-sphdom(1)+1;
-% sphlocVec = N*(sphlocX-1) + sphlocY;
 sphlocX = zeros(numel(idpatch),1);
 sphlocY = zeros(numel(idpatch),1);
 for pp = 1:numel(idpatch)
@@ -225,100 +240,30 @@ for pp = 1:numel(idpatch)
 end
 sphlocVec = sub2ind(size(sphX),sphlocX, sphlocY);
 
-spCov = zeros(size(sphX)); %a matrix that represents the sphreen
+spCov = zeros(size(sphX)); %a matrix that represents the visual field
 spCov(sphlocVec) = 1;
 spCov = imfill(spCov);
-SE = strel('disk',1,0);
+SE = strel('disk', round(1/pixSize),0);
 spCov = imclose(spCov,SE);
 spCov = imfill(spCov);
 %spCov = medfilt2(spCov,[3 3]);
-ActualCoverage = sum(spCov(:)); %deg^2
+ActualCoverage = sum(spCov(:)).*(pixSize^2); %deg^2
 MagFac = ActualCoverage/length(idpatch);
-
-% function [spCov JacCoverage ActualCoverage MagFac] = overRep(kmap_hor, kmap_vert, U, Jac, patch,sphdom,sphX,pixpermm)
-% 
-% pixpermm = pixpermm*U;
-% 
-% N = length(sphdom);
-% 
-% posneg = sign(mean(Jac(find(patch))));
-% id = find(sign(Jac)~=posneg | Jac == 0);
-% Jac(id) = 0;
-% patch(id) = 0;
-% 
-% idpatch = find(patch);
-% JacCoverage = abs(sum(abs(Jac(idpatch))))/pixpermm^2; %deg^2
-% 
-% sphlocX = round(kmap_hor(idpatch));
-% sphlocX = sphlocX-sphdom(1)+1;
-% sphlocY = round(kmap_vert(idpatch));
-% sphlocY = sphlocY-sphdom(1)+1;
-% sphlocVec = N*(sphlocX-1) + sphlocY;
-% 
-% spCov = zeros(size(sphX)); %a matrix that represents the sphreen
-% spCov(sphlocVec) = 1;
-% spCov = imfill(spCov);
-% SE = strel('disk',1,0);
-% spCov = imclose(spCov,SE);
-% spCov = imfill(spCov);
-% %spCov = medfilt2(spCov,[3 3]);
-% ActualCoverage = sum(spCov(:)); %deg^2
-% MagFac = ActualCoverage/length(idpatch);
-
-
-
-function [im splitflag Npatch] = resetPatch(im,centerPatch,imlab,q)
-
-%First make a dilated version of the original patch, as defined by the
-%Sereno 
-idorig = find(imlab == q);
-imorigpatch = zeros(size(im));
-imorigpatch(idorig) = 1; %the original region
-SE = strel('disk',1,0);
-imdilpatch = imdilate(imorigpatch,SE);
-
-%Now make the same patch, but limited to the pixels at the center of
-%space
-idpatch = find(imlab == q & centerPatch); %get pixels for this patch that are at the center of visual space
-impatch = zeros(size(im));
-impatch(idpatch) = 1; %an image of the patch we are looking at
-SE = strel('disk',1,0);
-impatch = imopen(impatch,SE);
-idpatch = find(impatch);
-imlabdum = bwlabel(impatch,4);
-idlab  = unique(imlabdum);
-Npatch = length(idlab)-1;
-
-splitflag = 0;
-if length(idlab) > 2 %Did limiting the patch to the center of v. space "split it"? i.e. should it be multiple areas?
-
-    imdist = bwdist(impatch); %distance trx on "truncated patch
-    id = find(~imdilpatch); %Make a boundary around the patch
-    imdist(id) = -inf;
-    imdist(idpatch) = 0; %force the local minima before watershed
-    wshed = watershed(imdist,4);
-    % wshed = sign(phi(wshed-1));  %make it isolated patches
-    wshed = double(sign((wshed-1)));
-
-    SE = strel('disk',1,0);
-    wshed = imerode(wshed,SE);  %erode slightly just so the fracture is a bit wider
-    im(idorig) = 0;
-    im = im+wshed;  %replace old patch with the "split" one
-
-    splitflag = 1;
-end
 
 
 function centerPatch = getCenterPatch(kmap_rad,im,R)
+smoothInSpace = false;
 
 id = find(kmap_rad<R);  %Find pixels near the center of visual space
 centerPatch = zeros(size(im));
 centerPatch(id) = 1;  %Make a mask for them
 centerPatch = centerPatch.*im;  
-SE = strel('disk',2,0);
-centerPatch = imopen(centerPatch,SE); %clean it up
-centerPatch = medfilt2(centerPatch,[3 3]); 
 
+if smoothInSpace
+    SE = strel('disk',2,0);
+    centerPatch = imopen(centerPatch,SE); %clean it up
+    centerPatch = medfilt2(centerPatch,[3 3]);
+end
 
 function [Nmin minpatch newpatches rad] = getNlocalmin(idpatch,Rmax,kmap_rad)
 
@@ -385,6 +330,38 @@ rad2 = imimposemin(rad, minpatch);
 id = find(1-dumpatch);
 rad2(id) = Rmax;  %reset, in case min is on the edge
 
+% % detect local maxima
+% if Nmin < 2
+%     rad = zeros(size(kmap_rad));
+%     rad(idnopatch) = -Rmax;
+%     rad(idpatch) = kmap_rad(idpatch);
+%     rad = medfilt2(rad,[medR medR]);  %Really important to do this after applying Rmax boundary. It gets rid of the tiny local minima on the edges
+%     minpatch = imregionalmin(-rad,8);
+%     minpatch = minpatch.*dumpatch;
+% 
+%     D = round(sqrt(length(idpatch))/20);
+%     %D = 1;
+%     SE = strel('disk',D,0);
+%     minpatch = imdilate(minpatch,SE);
+%     minpatch = minpatch.*dumpatch;
+% 
+%     %figure,imagesc(dumpatch.*kmap_rad)
+% 
+%     imlabel = bwlabel(minpatch,4);
+%     idlabel = unique(imlabel);
+%     Nmin = length(idlabel)-1;
+% 
+%     imlabel = bwlabel(minpatch,4);
+%     idlabel = unique(imlabel);
+%     Nmin = length(idlabel)-1;
+% 
+%     SE = strel('disk',3,0);
+%     dumpatch2 = imdilate(dumpatch,SE);
+% 
+%     rad2 = imimposemin(-rad, -minpatch);
+%     id = find(1-dumpatch);
+%     rad2(id) = Rmax;  %reset, in case min is on the edge
+% end
 
 id = find(~dumpatch2);
 rad2(id) = -inf;
@@ -396,9 +373,13 @@ newpatches(id) = 0;
 id = find(newpatches > 0);
 newpatches(id) = 1;
 
+newpatches = double(newpatches) .* dum; %same shape as the input 
+
+
 
 function imout = ploteccmap(im,rng,DS,pixpermm)
-
+%rng: range of colormap
+%DS: down-sampling factor
 %This assumes that the zeros are the background
 
 im = im(DS:DS:end,DS:DS:end);
