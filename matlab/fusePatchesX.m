@@ -2,7 +2,8 @@ function [im fuseflag] = fusePatchesX(im,kmap_hor,kmap_vert,pixpermm)
 
 %Fuse patches if they are adjacent, the same sign, and unique regions of visual space
 
-OLapTh = 0.15;%0.1
+OLapTh = 0.1;%0.15;
+smoothInSpace = false;
 
 xsize = size(kmap_hor,2)/pixpermm;  %Size of ROI mm
 ysize = size(kmap_hor,1)/pixpermm; 
@@ -20,9 +21,14 @@ Sereno = sin(angle(vdiff));
 imlab = bwlabel(im,4);  %Better to keep this as default (i.e. don' put in a 4)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-hh = fspecial('gaussian',size(kmap_hor),2);
-kmap_horS = ifft2(fft2(kmap_hor).*abs(fft2(hh)));
-kmap_vertS = ifft2(fft2(kmap_vert).*abs(fft2(hh)));
+if smoothInSpace
+    hh = fspecial('gaussian',size(kmap_hor),2);
+    kmap_horS = ifft2(fft2(kmap_hor).*abs(fft2(hh)));
+    kmap_vertS = ifft2(fft2(kmap_vert).*abs(fft2(hh)));
+else
+    kmap_vertS = kmap_vert;
+    kmap_horS = kmap_hor;
+end
 
 %%%Make Interpolated data to construct the visual space representations%%%
 dim = size(kmap_horS);

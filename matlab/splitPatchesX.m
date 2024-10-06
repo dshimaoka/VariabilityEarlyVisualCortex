@@ -3,6 +3,7 @@ function im = splitPatchesX(im,kmap_hor,kmap_vert,kmap_rad,pixpermm)
 debug = false;
 CovOverlapTh = 1.1;%as described in Garrett 2014
 smoothInSpace = false;
+doImopen = false;
 
 xsize = size(kmap_hor,2)/pixpermm;  %Size of ROI mm
 ysize = size(kmap_hor,1)/pixpermm; 
@@ -53,7 +54,6 @@ JacI = (dhdx.*dvdy - dvdx.*dhdy)*(pixpermm*U)^2;
 % JacI = (dhdx.*dvdy - dvdx.*dhdy)*(pixpermm*U)^2;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-doImopen = false;
 if doImopen
     SE = strel('disk',1,0);
     im = imopen(sign(im),SE);
@@ -197,13 +197,6 @@ for q = 1:length(imdom)-1 %loop through each patch ("visual area")
 
     CovOverlap = JacCoverage(q)/ActualCoverage(q);
 
-    % if JacCoverage/(pi*R^2) < .01 %get rid of the areas with practically no screen coverage
-    % if JacCoverage(q) <  coverageTh | CovOverlap > 1.05 
-    % 
-    %     id = find(imlab == q);
-    %     im(id) = 0;
-    % end
-
 end
 
 if debug
@@ -273,12 +266,13 @@ dum = zeros(size(kmap_rad));
 dum(idpatch) = 1;
 idnopatch = find(dum == 0);
 
+%discretize radius map into 10, making local minima detection easier
 kr = kmap_rad(idpatch);
 threshdom = min(kr)-1;
 for prc = 2:10:90
     threshdom = [threshdom prctile(kr,prc)];
 end
-threshdom = [threshdom max(kr)+1];
+threshdom = [threshdom max(kr)+1]; 
 
 for i = 1:length(threshdom)-1
    id = find(kmap_rad>threshdom(i) & kmap_rad<threshdom(i+1));
@@ -329,39 +323,6 @@ dumpatch2 = imdilate(dumpatch,SE);
 rad2 = imimposemin(rad, minpatch);
 id = find(1-dumpatch);
 rad2(id) = Rmax;  %reset, in case min is on the edge
-
-% % detect local maxima
-% if Nmin < 2
-%     rad = zeros(size(kmap_rad));
-%     rad(idnopatch) = -Rmax;
-%     rad(idpatch) = kmap_rad(idpatch);
-%     rad = medfilt2(rad,[medR medR]);  %Really important to do this after applying Rmax boundary. It gets rid of the tiny local minima on the edges
-%     minpatch = imregionalmin(-rad,8);
-%     minpatch = minpatch.*dumpatch;
-% 
-%     D = round(sqrt(length(idpatch))/20);
-%     %D = 1;
-%     SE = strel('disk',D,0);
-%     minpatch = imdilate(minpatch,SE);
-%     minpatch = minpatch.*dumpatch;
-% 
-%     %figure,imagesc(dumpatch.*kmap_rad)
-% 
-%     imlabel = bwlabel(minpatch,4);
-%     idlabel = unique(imlabel);
-%     Nmin = length(idlabel)-1;
-% 
-%     imlabel = bwlabel(minpatch,4);
-%     idlabel = unique(imlabel);
-%     Nmin = length(idlabel)-1;
-% 
-%     SE = strel('disk',3,0);
-%     dumpatch2 = imdilate(dumpatch,SE);
-% 
-%     rad2 = imimposemin(-rad, -minpatch);
-%     id = find(1-dumpatch);
-%     rad2(id) = Rmax;  %reset, in case min is on the edge
-% end
 
 id = find(~dumpatch2);
 rad2(id) = -inf;

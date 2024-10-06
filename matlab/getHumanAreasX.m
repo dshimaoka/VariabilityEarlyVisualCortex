@@ -57,7 +57,7 @@ VFS(id) = 0;
 I = VFS;
 SE = strel('disk',structuringElementRadius);
 
-%opening-by-reconstruction	
+%opening-by-reconstruction
 Ie = imerode(I,SE);
 Iobr = imreconstruct(Ie,I);
 
@@ -68,7 +68,7 @@ Iobrcbr = imcomplement(Iobrcbr);
 imagesc(Iobrcbr)
 
 
-hh = fspecial('gaussian',size(VFS),smoothingFac); 
+hh = fspecial('gaussian',size(VFS),smoothingFac);
 hh = hh/sum(hh(:));
 %VFS = ifft2(fft2(VFS).*abs(fft2(hh)));  %Important to smooth before thresholding below
 VFS = ifft2(fft2(Iobrcbr).*abs(fft2(hh)));
@@ -99,7 +99,7 @@ colorbar
 title(['3. VFS after filtering: ' num2str(smoothingFac)])
 
 gradmag = abs(VFS);
-figure(10), ax(4)=subplot(3,4,4); 
+figure(10), ax(4)=subplot(3,4,4);
 
 %threshSeg = threshold*nanstd(VFS(:));
 %imseg = (sign(gradmag-threshSeg/2) + 1)/2;  %threshold visual field sign map at +/-1.5sig
@@ -111,7 +111,7 @@ imdum = imseg.*VFS; imdum(id) = imdum(id)+1.1;
 ploteccmap(imdum,[.1 2.1],pixpermm);
 colorbar off
 axis xy
-title(['4. +/' num2str(threshold) 'x s.d. ']) 
+title(['4. +/' num2str(threshold) 'x s.d. '])
 
 
 patchSign = getPatchSign(imseg,VFS);
@@ -143,45 +143,45 @@ end
 %% Make boundary of visual cortex
 if makeBoundary
 
-%First pad the image with zeros because the "imclose" function does this
-%wierd thing where it tries to "bleed" to the edge if the patch near it
+    %First pad the image with zeros because the "imclose" function does this
+    %wierd thing where it tries to "bleed" to the edge if the patch near it
 
-Npad = 30;  %Arbitrary padding value.  May need more depending on image size and resolution
-dim = size(imseg);
-imsegpad = [zeros(dim(1),Npad) imseg zeros(dim(1),Npad)];
-dim = size(imsegpad);
-imsegpad = [zeros(Npad,dim(2)); imsegpad; zeros(Npad,dim(2))];
+    Npad = 30;  %Arbitrary padding value.  May need more depending on image size and resolution
+    dim = size(imseg);
+    imsegpad = [zeros(dim(1),Npad) imseg zeros(dim(1),Npad)];
+    dim = size(imsegpad);
+    imsegpad = [zeros(Npad,dim(2)); imsegpad; zeros(Npad,dim(2))];
 
-SE = strel('disk',10,0);
-imbound = imclose(imsegpad,SE);
+    SE = strel('disk',10,0);
+    imbound = imclose(imsegpad,SE);
 
-imbound = imfill(imbound); %often unnecessary, but sometimes there are small gaps need filling
+    imbound = imfill(imbound); %often unnecessary, but sometimes there are small gaps need filling
 
-% SE = strel('disk',5,0);
-% imbound = imopen(imbound,SE);
+    % SE = strel('disk',5,0);
+    % imbound = imopen(imbound,SE);
 
-SE = strel('disk',3,0);
-imbound = imdilate(imbound,SE); %Dilate to account for original thresholding.
-imbound = imfill(imbound);
+    SE = strel('disk',3,0);
+    imbound = imdilate(imbound,SE); %Dilate to account for original thresholding.
+    imbound = imfill(imbound);
 
-%Remove the padding
-imbound = imbound(Npad+1:end-Npad,Npad+1:end-Npad);
-imbound(:,1) = 0; imbound(:,end) = 0; imbound(1,:) = 0;  imbound(end,:) = 0; 
+    %Remove the padding
+    imbound = imbound(Npad+1:end-Npad,Npad+1:end-Npad);
+    imbound(:,1) = 0; imbound(:,end) = 0; imbound(1,:) = 0;  imbound(end,:) = 0;
 
-%Only keep the "main" group of patches. Preveiously used opening (see above), but this is more robust:
-bwlab = bwlabel(imbound,4);
-labid = unique(bwlab);
-for i = 1:length(labid)
-   id = find(bwlab == labid(i));
-   S(i) = length(id);
-end
-S(1) = 0; %To ignore the "surround patch"
-[dum id] = max(S);
-id = find(bwlab == labid(id));
-imbound = 0*imbound;
-imbound(id) = 1;
+    %Only keep the "main" group of patches. Preveiously used opening (see above), but this is more robust:
+    bwlab = bwlabel(imbound,4);
+    labid = unique(bwlab);
+    for i = 1:length(labid)
+        id = find(bwlab == labid(i));
+        S(i) = length(id);
+    end
+    S(1) = 0; %To ignore the "surround patch"
+    [dum id] = max(S);
+    id = find(bwlab == labid(id));
+    imbound = 0*imbound;
+    imbound(id) = 1;
 
-imbound = imbound .* mask;
+    imbound = imbound .* mask;
 
 else
     imbound = imdilate(mask, strel('disk',1));
@@ -191,7 +191,7 @@ imseg = imseg.*imbound;
 
 %This is important in case a patch reaches the edge... we want it to be
 %smaller than imbound
-imseg(:,1:2) = 0; imseg(:,end-1:end) = 0; imseg(1:2,:) = 0;  imseg(end-1:end,:) = 0; 
+imseg(:,1:2) = 0; imseg(:,end-1:end) = 0; imseg(1:2,:) = 0;  imseg(end-1:end,:) = 0;
 
 
 if doImopen
@@ -202,32 +202,32 @@ end
 
 %% Morphological thinning to create borders that are one pixel wide
 if doThinning
-bordr = getThinning(imbound, imseg);
+    bordr = getThinning(imbound, imseg);
 
-%Turn border map into patches
-im = bwlabel(1-bordr,4);
-im(find(im == 1)) = 0;
-im = sign(im);
+    %Turn border map into patches
+    im = bwlabel(1-bordr,4);
+    im(find(im == 1)) = 0;
+    im = sign(im);
 
-% bwlab = bwlabel(im,4);
-% labid = unique(bwlab);
-% for i = 1:length(labid)
-%    id = find(bwlab == labid(i));
-%    if length(id) < 30
-%        im(id) = 0;
-%    end
-% end
+    % bwlab = bwlabel(im,4);
+    % labid = unique(bwlab);
+    % for i = 1:length(labid)
+    %    id = find(bwlab == labid(i));
+    %    if length(id) < 30
+    %        im(id) = 0;
+    %    end
+    % end
 
 
-patchSign = getPatchSign(im,VFS);
+    patchSign = getPatchSign(im,VFS);
 
-figure(10), ax(7)=subplot(3,4,7),
-ploteccmap(patchSign,[1.1 2.1],pixpermm);
-hold on, 
-contour(xdom,ydom,im,[.5 .5],'k')
-title('7. Thinning')
-colorbar off
-else 
+    figure(10), ax(7)=subplot(3,4,7),
+    ploteccmap(patchSign,[1.1 2.1],pixpermm);
+    hold on,
+    contour(xdom,ydom,im,[.5 .5],'k')
+    title('7. Thinning')
+    colorbar off
+else
     im = imseg;
     patchSign = getPatchSign(im,VFS);
 end
@@ -247,15 +247,15 @@ title('8. Eccentricity map')
 
 %% ID redundant patches and split them (criterion #2)
 
-im = splitPatchesX(im,kmap_hor,kmap_vert,AreaInfo.kmap_rad,pixpermm); 
+im = splitPatchesX(im,kmap_hor,kmap_vert,AreaInfo.kmap_rad,pixpermm);
 
-    % %Remake the border with thinning
-    % bordr = getThinning(imbound, im);
-    % 
-    % %Turn border map into patches
-    % im = bwlabel(1-bordr,4);
-    % im(find(im == 1)) = 0;
-    % im = sign(im);
+% %Remake the border with thinning
+% bordr = getThinning(imbound, im);
+%
+% %Turn border map into patches
+% im = bwlabel(1-bordr,4);
+% im(find(im == 1)) = 0;
+% im = sign(im);
 
 if doImopen
     SE = strel('disk',2);
@@ -264,7 +264,7 @@ end
 
 %% ID adjacent patches of the same VFS and fuse them if not redundant (criterion #3)
 
-[im fuseflag] = fusePatchesX(im,kmap_hor,kmap_vert,pixpermm); 
+[im fuseflag] = fusePatchesX(im,kmap_hor,kmap_vert,pixpermm);
 
 figure(10), ax(9)=subplot(3,4,9),
 ploteccmap(im.*AreaInfo.kmap_rad,[0 5],pixpermm);
@@ -340,14 +340,14 @@ hold on,
 contour(xdom,ydom,im,[.5 .5],'k');
 for i = 1:length(DdomX)
     for j = 1:length(DdomY)
-        
+
         xpart = 5*Distort(j,i)*cos(prefAxisMF(j,i)*pi/180);
         ypart = 5*Distort(j,i)*sin(prefAxisMF(j,i)*pi/180);
-        
+
         if im(DdomY(j),DdomX(i))
             hold on, plot([DdomX(i)-xpart DdomX(i)+xpart]*mmperpix,[DdomY(j)-ypart DdomY(j)+ypart]*mmperpix,'k')
         end
-        
+
     end
 end
 linkaxes(ax(:));
@@ -377,7 +377,7 @@ jetid = jet;
 imout = zeros(dim(1),dim(2),3);
 for i = 1:dim(1)
     for j = 1:dim(2)
-        
+
         if isnan(im(i,j))
             imout(i,j,:) = [1 1 1];
         else
@@ -421,7 +421,7 @@ jetid = jet;
 imout = zeros(dim(1),dim(2),3);
 for i = 1:dim(1)
     for j = 1:dim(2)
-        
+
         if isnan(im(i,j))
             imout(i,j,:) = [1 1 1];
         else
@@ -451,10 +451,10 @@ imlabel = bwlabel(im,4);
 areaID = unique(imlabel);
 patchSign = zeros(size(imlabel));
 for i = 2:length(areaID)
-   id = find(imlabel == areaID(i));
-   m = mean(imsign(id));
-   areaSign(i-1) = sign(m);
-   patchSign(id) = sign(m)+1.1;
+    id = find(imlabel == areaID(i));
+    m = mean(imsign(id));
+    areaSign(i-1) = sign(m);
+    patchSign(id) = sign(m)+1.1;
 end
 
 

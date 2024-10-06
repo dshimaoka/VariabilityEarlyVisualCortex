@@ -6,71 +6,41 @@
 % this script requires imageProcessing toolbox (imfill, imgaussfilt)
 
 subject_id =  {'157336','585256','114823','581450','725751','avg'};
-% saveDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/results/';
-%ng mask 
-% 725751: V1-V3 connected w threshold = .3
+%ng 
 saveDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
-for sid = [4 6]%1:length(subject_id)
+
+    smoothingFac = 2;%3
+    th_retinotopy = 2; %1;
+
+for sid = 1:length(subject_id)
 
     %% load field sign data
     retinotopyFilename = fullfile(saveDir,  subject_id{sid}, ['geometry_retinotopy_'  subject_id{sid}   '.mat']);
     load(retinotopyFilename, 'grid_azimuth','grid_altitude') %'vfs', 'grid_ecc'
     grid_azimuth = pi/180 * grid_azimuth;
     grid_altitude = pi/180 * grid_altitude;
-    mask_ribeiro = ~isnan(grid_altitude); %generally this produces many small patches near mask border
 
-    %% preprocessing retinotopy data (to be used for elastic net simulation)
+    % get mask within which retinotopy gradient is smooth
+    [mask, oddball_inner, oddball_outer] = getMask(grid_azimuth, grid_altitude, th_retinotopy);
 
-    % interpolation using spatial derivative
-    th_retinotopy = 2; %1;
-    [dhdx, dhdy] = gradient(grid_azimuth);
-    [dvdx, dvdy] = gradient(grid_altitude);
-    tmp = (abs(dhdx)+abs(dhdy)+abs(dvdx)+abs(dvdy));
-    oddball = abs(tmp) > th_retinotopy*std(tmp(~isnan(tmp))); 
-   
-
-    % define new mask
-    SE = strel('disk', 2,0);
-    oddball = imclose(oddball,SE);
-    oddball = imfill(oddball, 'hole');
-    oddball_all = imdilate(oddball,SE); %to include mask boundary
-    
-    [labeledImage, numComponents] = bwlabel(oddball_all | ~mask_ribeiro);
-    labelsInOddball_all = unique(labeledImage(oddball_all));
-    labels_outer = unique(labeledImage(~mask_ribeiro));
-    labels_inner = setxor(labelsInOddball_all, labels_outer);
-
-    oddball_inner = ismember(labeledImage, labels_inner);
-    oddball_outer = ismember(labeledImage, labels_outer);
-    mask_tmp = mask_ribeiro & ~oddball_outer; 
-
-    [labeledImage, numComponents] = bwlabel(mask_tmp);
-    stats = regionprops(labeledImage, 'Area');
-    allAreas = [stats.Area];  % Extract areas of all components
-    [~, largestComponentIdx] = max(allAreas);
-
-    %Create a mask with only the largest component
-    mask = (labeledImage == largestComponentIdx);
-
-
+    % interpolate pixels with odd values inside the mask
      interpolated = fillmissing2(grid_azimuth+1i*grid_altitude, 'linear','MissingLocations',oddball_inner);
     grid_azimuth_i = real(interpolated);
     grid_altitude_i = imag(interpolated);
 
     %% define areal borders by Garrett 2014
-    smoothingFac = 2;%3
-    threshold = .3; %.3
-    [~,vfs_th, vfs, fig] = getHumanAreasX(180/pi*grid_azimuth_i, 180/pi*grid_altitude_i, smoothingFac, threshold, mask);
+    if any(strcmp(subject_id{sid},{'585256'}))
+        threshold = .7;
+   elseif any(strcmp(subject_id{sid},{'725751'}))
+        threshold = .5;
+    else
+        threshold = .3;
+    end
+
+    [~,vfs_th, vfs_f, fig] = getHumanAreasX(180/pi*grid_azimuth_i, 180/pi*grid_altitude_i, ...
+        smoothingFac, threshold, mask);
     screen2png(fullfile(saveDir, subject_id{sid},['areaSegmentation_' subject_id{sid} '.png']));
     close all
-
-    % figure;
-        % subplot(411); imagesc(vfs);colorbar; axis equal tight xy; title('original');
-        % subplot(412); imagesc(vfs_f);colorbar; axis equal tight xy; hold on;title('smoothed');
-        % subplot(413); imagesc(vfs_th);colorbar; axis equal tight xy;title('thresholded');
-        % subplot(414); imagesc(signBorder);colorbar; axis equal tight xy;title('Garret border');
-        % linkaxes(findall(gcf, 'type', 'axes'))
-
 
     %% define areas by clicking region(s) of interest
     label{1} = 'V1';
@@ -80,7 +50,7 @@ for sid = [4 6]%1:length(subject_id)
 
     lcolor = lines(numel(label));
 
-    imagesc(vfs);
+    imagesc(vfs_f);
 
     connectedPixels = [];
     for ii = 1:numel(label)
@@ -113,7 +83,7 @@ for sid = [4 6]%1:length(subject_id)
     %% visualization
     figure('position',[0 0 700 1500]);
     subplot(211);
-    imagesc(vfs); colormap(gray); hold on
+    imagesc(vfs_f); colormap(gray); hold on
     for iarea = 1:numel(label)
         contour(areaMatrix{iarea},[.5 .5], 'edgecolor',lcolor(iarea,:),'linewidth',1);
         hold on;
@@ -134,6 +104,7 @@ for sid = [4 6]%1:length(subject_id)
     %% save results
     %save( [retinotopyFilename(1:end-4), '_arealBorder.mat'],...
     save(fullfile(saveDir,  subject_id{sid}, ['arealBorder_' subject_id{sid}]),... 
-    'areaMatrix',"connectedPixels",'vfs_th');%,'-append'); %'vfs_f'
+    'areaMatrix',"connectedPixels",'vfs_th','vfs_f','grid_azimuth_i',"grid_altitude_i",'threshold',...
+    'smoothingFac','mask');
     close all;
 end
