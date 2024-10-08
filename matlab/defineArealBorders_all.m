@@ -17,16 +17,14 @@ for sid = 1:length(subject_id)
     %% load field sign data
     retinotopyFilename = fullfile(saveDir,  subject_id{sid}, ['geometry_retinotopy_'  subject_id{sid}   '.mat']);
     load(retinotopyFilename, 'grid_azimuth','grid_altitude') %'vfs', 'grid_ecc'
-    grid_azimuth = pi/180 * grid_azimuth;
-    grid_altitude = pi/180 * grid_altitude;
-
+    
     % get mask within which retinotopy gradient is smooth
-    [mask, oddball_inner, oddball_outer] = getMask(grid_azimuth, grid_altitude, th_retinotopy);
+    [mask, oddball_inner, oddball_outer] = getMask(pi/180 *grid_azimuth, pi/180 *grid_altitude, th_retinotopy);
 
     % interpolate pixels with odd values inside the mask
-     interpolated = fillmissing2(grid_azimuth+1i*grid_altitude, 'linear','MissingLocations',oddball_inner);
-    grid_azimuth_i = real(interpolated);
-    grid_altitude_i = imag(interpolated);
+     interpolated = fillmissing2(pi/180 *grid_azimuth+1i*pi/180 *grid_altitude, 'linear','MissingLocations',oddball_inner);
+    grid_azimuth_i = 180/pi*real(interpolated); %[deg]
+    grid_altitude_i = 180/pi*imag(interpolated); %[deg]
 
     %% define areal borders by Garrett 2014
     if any(strcmp(subject_id{sid},{'585256'}))
@@ -37,7 +35,7 @@ for sid = 1:length(subject_id)
         threshold = .3;
     end
 
-    [~,vfs_th, vfs_f, fig] = getHumanAreasX(180/pi*grid_azimuth_i, 180/pi*grid_altitude_i, ...
+    [~,vfs_th, vfs_f, fig] = getHumanAreasX(grid_azimuth_i, grid_altitude_i, ...
         smoothingFac, threshold, mask);
     screen2png(fullfile(saveDir, subject_id{sid},['areaSegmentation_' subject_id{sid} '.png']));
     close all

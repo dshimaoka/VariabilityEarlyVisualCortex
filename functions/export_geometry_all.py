@@ -40,7 +40,7 @@ if doAvg:
     
 
 
-for ids in range(0,len(subject_id_all)):
+for ids in range(0,0):#len(subject_id_all)):
     subject_id = subject_id_all[ids]
     # x-y grid for 2D matrix representation
     #grid_x, grid_y = np.mgrid[40:120, 0:60] #dorsal only
@@ -64,16 +64,12 @@ for ids in range(0,len(subject_id_all)):
     # load polar angle data, convert to gifti space, then to 2D matrix
     data = scipy.io.loadmat(osp.join(loadDir, 'cifti_polarAngle_all.mat'))['cifti_polarAngle']
     PAData = data['x' + str(subject_id) + '_fit1_polarangle_msmall'][0][0]
-    sum = PAData < 180
-    minus = PAData > 180
-    PAData[sum] = PAData[sum] + 180
-    PAData[minus] = PAData[minus] - 180
     PAData_L = dst.getciftiIngifti(PAData, final_mask_L);
     PAData_mat = dst.gifti2mat(stdSphere, PAData_L, final_mask_L, grid_x, grid_y); #[deg]
    
     if showFig:
         plt.imshow(PAData_mat, extent=[np.min(grid_x),np.max(grid_x)+1, np.min(grid_y), np.max(grid_y)+1],
-                    origin='lower', cmap='viridis'); plt.colorbar()    
+                    origin='lower', vmin=0, vmax=361, cmap='gist_rainbow_r'); plt.colorbar()    
         plt.show();
 
     
@@ -89,8 +85,8 @@ for ids in range(0,len(subject_id_all)):
         plt.show();
     
     #obtain VFS map
-    theta = dst.computeFieldSign(PAData_mat, ECCData_mat, smoothing = True, binarizing = False)
-    plt.imshow(theta[:,:], extent=[20,120, 0,100], origin='lower', cmap='viridis')
+    #theta = dst.computeFieldSign(PAData_mat, ECCData_mat, smoothing = True, binarizing = False)
+    #plt.imshow(theta[:,:], extent=[20,120, 0,100], origin='lower', cmap='viridis')
     
     # convert to alititude and azimuth
     azimuth, altitude = dst.polar_to_cartesian(ECCData_mat, PAData_mat)
@@ -134,12 +130,13 @@ for ids in range(0,len(subject_id_all)):
     if doAvg == False:
         savemat(osp.join(thisDir, 'geometry_retinotopy_' + subject_id + '.mat'), 
                 {'array_3d': locData_mat,'grid_x': grid_x,'grid_y': grid_y, 
-                  'grid_PA': PAData_mat, 'grid_ecc': ECCData_mat,
-                  'grid_azimuth': azimuth, 'grid_altitude': altitude,
-                  'vfs': theta, 'grid_curv': CURVData_mat,
+                  'grid_azimuth': azimuth, 'grid_altitude': altitude, 'grid_curv': CURVData_mat,
                   'final_mask_L': final_mask_L,'final_mask_L_d': final_mask_L_d,
                   'final_mask_L_d_idx': final_mask_L_d_idx, 
                   'final_mask_L_idx': final_mask_L_idx});
+        # no longer saved:
+        #    'grid_PA': PAData_mat, 'grid_ecc': ECCData_mat,'vfs': theta, 
+            
     else:
         PAData_mat_all[:,:,ids] = PAData_mat;
         ECCData_mat_all[:,:,ids] = ECCData_mat;
@@ -166,9 +163,7 @@ if doAvg:
     thisDir = osp.join(saveDir, 'avg');
     savemat(osp.join(thisDir, 'geometry_retinotopy_avg.mat'), 
             {'array_3d': locData_mat,'grid_x': grid_x,'grid_y': grid_y, 
-              'grid_PA': mPAData_mat, 'grid_ecc': mECCData_mat,
-              'grid_azimuth': mazimuth, 'grid_altitude': maltitude,
-              'vfs': theta, 'grid_curv': mCURVData_mat,
+              'grid_azimuth': mazimuth, 'grid_altitude': maltitude, 'grid_curv': mCURVData_mat,
               'final_mask_L': final_mask_L,'final_mask_L_d': final_mask_L_d,
               'final_mask_L_d_idx': final_mask_L_d_idx, 
               'final_mask_L_idx': final_mask_L_idx});
