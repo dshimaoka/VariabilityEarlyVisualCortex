@@ -1,4 +1,5 @@
 subject_id = {'avg','114823','157336','585256','581450','725751'};
+%subject_id = getSubjectid;
 %114823: meshing failed for hmax of 2 and hmin of 1
 
 %loadDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/data/';
@@ -170,9 +171,24 @@ for sid= 1:numel(subject_id)
     distance2D_euc = reshape(distance4D_euc, numel(yaxis)*numel(xaxis), numel(yaxis)*numel(xaxis));
 
 
+   %% Distance on flat surface
+   %[XOnSurf, YOnSurf] = positionOnSurface(X, Y); ... map from 3d position to position on the flattend map
+   distance4D_flat = nan(numel(yaxis), numel(xaxis), numel(yaxis), numel(xaxis));
+   [sy,sx] = ind2sub([numel(yaxis) numel(xaxis)], withinMask);
+   [ty,tx] = ind2sub([numel(yaxis) numel(xaxis)], withinMask);
+    SX=repmat(sx, [1,numel(x)]);
+    SY=repmat(sy, [1,numel(y)]);
+   distance_flat_c = sqrt((SX - SX').^2 + (SY - SY').^2);
+   for ii = 1:numel(withinMask)
+       for jj = 1:numel(withinMask)
+           distance4D_flat(sy(ii), sx(ii), ty(jj), tx(jj)) = distance_flat_c(ii,jj);
+       end
+   end
+   distance2D_flat = reshape(distance4D_flat, numel(yaxis)*numel(xaxis), numel(yaxis)*numel(xaxis));
+
     save(fullfile(saveDir, subject_id{sid}, ['minimal_path_' type '_hmax' num2str(hmax) '_' subject_id{sid}]),...
         'distance4D','distance2D','xy2node','surfaceNodes',...
-        'distance4D_euc','distance2D_euc');%,'G','-v7.3');
+        'distance4D_euc','distance2D_euc','distance4D_flat','distance2D_flat');%,'G','-v7.3');
 
 
   %% show surface and shortest path distance
@@ -215,74 +231,67 @@ for sid= 1:numel(subject_id)
 
 
     %% sanity check 2
+    nPos = 6;
+    figure('position',[0 0 1980 1080]);
+    for cc = 1:3
+        switch cc
+            case 1
+                thisDistance4D = distance4D;
+            case 2
+                thisDistance4D = distance4D_euc;
+            case 3
+                thisDistance4D = distance4D_flat;
+        end
+        for ii = 1:nPos
 
- figure('position',[0 0 1980 1080]);
- for ii = 1:6
-     
-     % sy = 25+1*ii;sx=70+1;
-    sy =50 + 2*ii; sx = 43 +2*ii;
+            % sy = 25+1*ii;sx=70+1;
+            sy =50 + 2*ii; sx = 43 +2*ii;
 
+            distance4D_tmp = squeeze(thisDistance4D(sy,sx,:,:));
+            maskV1 = areaMatrix{1}.*1;
+            maskV1(maskV1==0)=nan;
+            maskV2 = areaMatrix{2}.*1;
+            maskV2(maskV2==0)=nan;
+            distanceV1 = distance4D_tmp .* maskV1;
+            %option1: minimum
+            [~,minidx] = nanmin(distanceV1(:),[],1);
+            [ty,tx] = ind2sub([size(distance4D,1) size(distance4D,2)], minidx);
+            %option2: CoM
+            distanceV1_c = 1./exp(distanceV1);
+            distanceV1_c(isnan(distanceV1_c)) = 0;
+            props = regionprops(true(size(distanceV1_c)), distanceV1_c, 'WeightedCentroid');
+            ty1c = props.WeightedCentroid(2); tx1c = props.WeightedCentroid(1);
 
-     distance4D_tmp = squeeze(distance4D_euc(sy,sx,:,:));
-     maskV1 = areaMatrix{1}.*1;
-     maskV1(maskV1==0)=nan;
-     maskV2 = areaMatrix{2}.*1;
-     maskV2(maskV2==0)=nan;
-     distanceV1 = distance4D_tmp .* maskV1;
-     %option1: minimum
-     [~,minidx] = nanmin(distanceV1(:),[],1);
-     [ty,tx] = ind2sub([size(distance4D,1) size(distance4D,2)], minidx);
-     %option2: CoM
-     distanceV1_c = 1./exp(distanceV1);
-     distanceV1_c(isnan(distanceV1_c)) = 0;
-     props = regionprops(true(size(distanceV1_c)), distanceV1_c, 'WeightedCentroid');
-     ty1c = props.WeightedCentroid(2); tx1c = props.WeightedCentroid(1);
+            distanceV2 = distance4D_tmp .* maskV2;
+            [~,minidx] = nanmin(distanceV2(:),[],1);
+            [ty2,tx2] = ind2sub([size(distance4D,1) size(distance4D,2)], minidx);
 
-     distanceV2 = distance4D_tmp .* maskV2;
-     [~,minidx] = nanmin(distanceV2(:),[],1);
-     [ty2,tx2] = ind2sub([size(distance4D,1) size(distance4D,2)], minidx);
-
-     ax(ii)=subplot(1,6,ii);
-     imagesc(distance4D_tmp ,'AlphaData',roi);hold on;
-     plot(sx,sy,'rx', tx,ty,'ro', tx1c,ty1c,'yo');
-     axis equal tight xy; grid on; hold off;
-     % xlim([70 90]);ylim([20 40]);
-     if ii==1
-         title('distance from source (x)')
-         legend('source','tgt min distance','tgt CoM')
-     end
- end
- linkaxes(ax);
+            ax(ii)=subplot(3, nPos, nPos*(cc-1) + ii);
+            imagesc(distance4D_tmp ,'AlphaData',roi);hold on;
+            plot(sx,sy,'rx', tx,ty,'ro', tx1c,ty1c,'yo');
+            axis equal tight xy; grid on; hold off;
+            %caxis([0 25])
+            % xlim([70 90]);ylim([20 40]);
+            if ii==1
+                switch cc
+                    case 1
+                        title('minimal path length');
+                    case 2
+                        title('Euclidean distance');
+                    case 3
+                        title('Distance on surface');
+                end
+                %legend('source','tgt min distance','tgt CoM')
+            end
+        end
+    end
+    linkaxes(ax);
+    linkcaxes(ax);
+    mcolorbar;
+ 
 
  screen2png(fullfile(saveDir,subject_id{sid},['minimal_path_' type '_hmax' num2str(hmax) '_serie_' subject_id{sid}]))
 
-
-  
-    %
-    % % Set the range of rotation angles
-    % angles = -90:2:90;  % Change the increment (5 degrees) as needed
-    %
-    % % Initialize GIF file
-    % filename = 'rotating_3d_figure.gif';
-    %
-    % % Loop through each angle and capture frame for the GIF
-    % for i = 1:length(angles)
-    %     view([angles(i), 0]);
-    %
-    %     % Capture the current figure as an image
-    %     frame = getframe(gcf);
-    %     im = frame2im(frame);
-    %     [imind, cm] = rgb2ind(im, 256);
-    %
-    %     % Write to the GIF File
-    %     if i == 1
-    %         imwrite(imind, cm, filename, 'gif', 'Loopcount', inf, 'DelayTime', 0.1);
-    %     else
-    %         imwrite(imind, cm, filename, 'gif', 'WriteMode', 'append', 'DelayTime', 0.1);
-    %     end
-    % end
-    %
-    %
 close all
 end %sid
 
