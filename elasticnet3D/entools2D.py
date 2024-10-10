@@ -17,6 +17,7 @@ import numpy as np
 from scipy.special import erfinv
 import matplotlib.pyplot as plt
 import functions.dstools as dst
+import astropy.stats as ast
 
 # x is cortical space in mm
 # it should go from 0.0mm to 8mm, which should give eccentricity to 0.8 to 10.0
@@ -217,7 +218,7 @@ def resultSummary(result, yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, 
         yb_pol = np.column_stack((yb_ecc,yb_pa)) #[ecc, pa]
         
         retinotopy_ecc, retinotopy_pa = dst.cartesian_to_polar(retinotopy[:,0],retinotopy[:,1])
-        retinotopy_pol = np.column_stack((retinotopy_ecc,retinotopy_pa)) #[ecc, pa]
+        retinotopy_pol = np.column_stack((retinotopy_ecc,retinotopy_pa)) #[ecc, pa] in [deg]
         
         # result in cartesian coordinate
         result2d = np.nan * np.ones((map_h,map_w,2))
@@ -284,12 +285,15 @@ def resultSummary(result, yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, 
          # correlation between original and simulation
         corr_azimuth = np.corrcoef(retinotopy[mask_var_idx,0], result[:,0])[0,1];
         corr_altitude = np.corrcoef(retinotopy[mask_var_idx,1], result[:,1])[0,1];
-        
+
+        # circular correlation of PA
+        corr_pa = ast.circcorrcoef(np.pi/180*retinotopy_pol[mask_var_idx, 1], np.pi/180*result_pa)
+
         #mask_var_idx = np.concatenate([mask_idx[index] for index in varIdx])
         #corr_azimuth[thisArea] = np.corrcoef(retinotopy[mask_idx[index] for index in thisArea,0], result[:,0])[0,1];
         corr_azimuth_v2 = np.corrcoef(retinotopy[mask_idx[1],0], result[0:len(mask_idx[1]),0])[0,1];
         corr_altitude_v2 = np.corrcoef(retinotopy[mask_idx[1],1], result[0:len(mask_idx[1]),1])[0,1];
         
-        return corr_azimuth, corr_altitude
+        return corr_azimuth, corr_altitude, corr_pa
     
     

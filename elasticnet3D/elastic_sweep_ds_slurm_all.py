@@ -32,11 +32,11 @@ from scipy.io import savemat
 
 
 
-all_ids = ['114823','157336','585256','581450','725751']; #from Ribeiro 2023 Fig1
+all_ids = ['114823','157336','585256','581450','725751','avg']; #from Ribeiro 2023 Fig1
 loadDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
 
 
-for ids in range(0,1):#len(all_ids)):
+for ids in range(0,len(all_ids)):
     subject_id = all_ids[ids]
     thisDir = osp.join(loadDir, subject_id);
     
@@ -232,12 +232,9 @@ for ids in range(0,1):#len(all_ids)):
     global_step = tf.Variable(0, trainable=False)
     current_eta = tf.train.exponential_decay(eta0, global_step, 10, 0.99, staircase=False)
     
-    cost = yx_cost + beta1 * reg1 + beta2 * reg2
-    
-    opt = tf.train.RMSPropOptimizer(current_eta, momentum = m).minimize(cost, global_step = global_step)
     
     
-    def train(sess, opt, kappa, beta1, beta2, y, b1, b2, reg2, subject_id):
+    def train(sess, opt, kappa, beta1, beta2, y, b1, b2, subject_id):
         sess.run(tf.global_variables_initializer())
         k = 30.0
         nIter = 1000  #1000
@@ -265,13 +262,16 @@ for ids in range(0,1):#len(all_ids)):
     numb2 = 5;
     corr_azimuth = np.zeros((numb1,numb2))
     corr_altitude = np.zeros((numb1,numb2))
+    corr_pa = np.zeros((numb1,numb2))
     corr_azimuth_flat = np.zeros((numb1,numb2))
     corr_altitude_flat = np.zeros((numb1,numb2))
+    corr_pa_flat = np.zeros((numb1,numb2))
     corr_azimuth_euc = np.zeros((numb1,numb2))
     corr_altitude_euc = np.zeros((numb1,numb2))
-
-    for i1 in range(0, numb1):#0,5
-        for i2 in range(0, numb2):#0,5
+    corr_pa_euc = np.zeros((numb1,numb2))
+    
+    for i1 in range(0, numb1):
+        for i2 in range(0, numb2):
             #b1 = 0.02*1.6**i1 #smoothness
             #b2 = 0.02*1.6**i2 #inter-areal path length
             b1 = 0.01*2**i1
@@ -279,49 +279,65 @@ for ids in range(0,1):#len(all_ids)):
             
             print('running elastic net b1:' + str(b1) + ', b2:' + str(b2))
             
+            ## Minimal path length
             suffix = subject_id + '_b1_' + "%d"%(1e3*b1) + '_b2_' + "%d"%(1e3*b2)
-            result = train(sess, opt, kappa, beta1, beta2, y, b1, b2, reg2, subject_id)
-            
+            opt = tf.train.RMSPropOptimizer(current_eta, momentum = m).minimize(yx_cost + beta1 * reg1 + beta2 * reg2, global_step = global_step)
+            result = train(sess, opt, kappa, beta1, beta2, y, b1, b2, subject_id)
             summary = e2d.resultSummary(result[0], yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, mask_var_sub, mask_fix_idx, mask_fix_sub, thisDir, suffix, subject_id)
             corr_azimuth[i1,i2] = summary[0]
             corr_altitude[i1,i2] = summary[1]
+            corr_pa[i1,i2] = summary[2]
+
 
             ## Euclidean distance on flat surface as a control
             #need a normalization factor for b2/reg2??
             suffix_flat = subject_id + '_b1_' + "%d"%(1e3*b1) + '_b2_' + "%d"%(1e3*b2) + "_flat"
-            result_flat = train(sess, opt, kappa, beta1, beta2, y, b1, b2, reg2_flat, subject_id)
-            
+            opt_flat = tf.train.RMSPropOptimizer(current_eta, momentum = m).minimize(yx_cost + beta1 * reg1 + beta2 * reg2_flat, global_step = global_step)
+            result_flat = train(sess, opt_flat, kappa, beta1, beta2, y, b1, b2, subject_id)            
             summary_flat = e2d.resultSummary(result_flat[0], yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, mask_var_sub, mask_fix_idx, mask_fix_sub, thisDir, suffix_flat, subject_id)
             corr_azimuth_flat[i1,i2] = summary_flat[0]
             corr_altitude_flat[i1,i2] = summary_flat[1]
+            corr_pa_flat[i1,i2] = summary_flat[2]
+
 
             ## Euclidean distance in 3D as a control
             #need a normalization factor for b2/reg2??
             suffix_euc = subject_id + '_b1_' + "%d"%(1e3*b1) + '_b2_' + "%d"%(1e3*b2) + "_euc"
-            result_euc = train(sess, opt, kappa, beta1, beta2, y, b1, b2, reg2_euc, subject_id)
-            
+            opt_euc = tf.train.RMSPropOptimizer(current_eta, momentum = m).minimize(yx_cost + beta1 * reg1 + beta2 * reg2_euc, global_step = global_step)
+            result_euc = train(sess, opt_euc, kappa, beta1, beta2, y, b1, b2, subject_id)            
             summary_euc = e2d.resultSummary(result_euc[0], yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, mask_var_sub, mask_fix_idx, mask_fix_sub, thisDir, suffix_euc, subject_id)
             corr_azimuth_euc[i1,i2] = summary_euc[0]
             corr_altitude_euc[i1,i2] = summary_euc[1]
+            corr_pa_euc[i1,i2] = summary_euc[2]
+            
 
     #summary across simulations
-    plt.subplot(321);
+    plt.subplot(331);
     plt.imshow(corr_azimuth, origin='lower'); plt.title('corr in azimuth'); plt.clim(.5, 1); plt.xlabel('b2: inter-areal path length'); plt.ylabel('b1: intra-areal smoothness')
 
-    plt.subplot(322);
+    plt.subplot(332);
     plt.imshow(corr_altitude, origin='lower'); plt.title('corr in altitude'); plt.clim(.5, 1);
     
-    plt.subplot(323);
+    plt.subplot(333);
+    plt.imshow(corr_pa, origin='lower'); plt.title('circcorr in PA'); plt.clim(.5, 1);
+    
+    plt.subplot(334);
     plt.imshow(corr_azimuth_flat, origin='lower'); plt.title('Euclidean dist on flat surface'); plt.clim(.5, 1); plt.xlabel('b2: inter-areal path length'); plt.ylabel('b1: intra-areal smoothness')
 
-    plt.subplot(324);
+    plt.subplot(335);
     plt.imshow(corr_altitude_flat, origin='lower'); plt.clim(.5, 1);  
     
-    plt.subplot(325);
+    plt.subplot(336);
+    plt.imshow(corr_pa_flat, origin='lower'); plt.clim(.5, 1);
+
+    plt.subplot(337);
     plt.imshow(corr_azimuth_euc, origin='lower'); plt.title('Euclidean dist in 3d brain'); plt.clim(.5, 1); plt.xlabel('b2: inter-areal path length'); plt.ylabel('b1: intra-areal smoothness')
 
-    plt.subplot(326);
+    plt.subplot(338);
     plt.imshow(corr_altitude_euc, origin='lower'); plt.clim(.5, 1); plt.colorbar; 
+    
+    plt.subplot(339);
+    plt.imshow(corr_pa_euc, origin='lower'); plt.clim(.5, 1);
     
     plt.draw()
     plt.gcf().set_size_inches(20, 15)
@@ -329,8 +345,8 @@ for ids in range(0,1):#len(all_ids)):
     plt.close()
 
     savemat(thisDir+'/summary_correlation_'+subject_id +'.mat', 
-             {'corr_azimuth': corr_azimuth,'corr_altitude': corr_altitude, 
-              'corr_azimuth_euc': corr_azimuth_euc,'corr_altitude_euc': corr_altitude_euc,
-              'corr_azimuth_flat': corr_azimuth_flat,'corr_altitude_flat': corr_altitude_flat});
+             {'corr_azimuth': corr_azimuth,'corr_altitude': corr_altitude, 'corr_pa': corr_pa,
+              'corr_azimuth_euc': corr_azimuth_euc,'corr_altitude_euc': corr_altitude_euc, 'corr_pa_euc': corr_pa_euc,
+              'corr_azimuth_flat': corr_azimuth_flat,'corr_altitude_flat': corr_altitude_flat,  'corr_pa_flat': corr_pa_flat});
     
     
