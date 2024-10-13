@@ -258,8 +258,8 @@ for ids in range(0,len(all_ids)):
     ###########################
         
        
-    numb1 = 5;
-    numb2 = 5;
+    numb1 = 1;
+    numb2 = 1;
     corr_azimuth = np.zeros((numb1,numb2))
     corr_altitude = np.zeros((numb1,numb2))
     corr_pa = np.zeros((numb1,numb2))
@@ -280,9 +280,10 @@ for ids in range(0,len(all_ids)):
             print('running elastic net b1:' + str(b1) + ', b2:' + str(b2))
             
             ## Minimal path length
-            suffix = subject_id + '_b1_' + "%d"%(1e3*b1) + '_b2_' + "%d"%(1e3*b2)
+            suffix = tgt + '_' + subject_id + '_b1_' + "%d"%(1e3*b1) + '_b2_' + "%d"%(1e3*b2)
             opt = tf.train.RMSPropOptimizer(current_eta, momentum = m).minimize(yx_cost + beta1 * reg1 + beta2 * reg2, global_step = global_step)
             result = train(sess, opt, kappa, beta1, beta2, y, b1, b2, subject_id)
+            result2d = e2d.getResult2D(result[0], yb, mask_var_sub, mask_fix_sub, map_h, map_w)
             summary = e2d.resultSummary(result[0], yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, mask_var_sub, mask_fix_idx, mask_fix_sub, thisDir, suffix, subject_id)
             corr_azimuth[i1,i2] = summary[0]
             corr_altitude[i1,i2] = summary[1]
@@ -291,25 +292,21 @@ for ids in range(0,len(all_ids)):
 
             ## Euclidean distance on flat surface as a control
             #need a normalization factor for b2/reg2??
-            suffix_flat = subject_id + '_b1_' + "%d"%(1e3*b1) + '_b2_' + "%d"%(1e3*b2) + "_flat"
+            suffix_flat = tgt + '_' + subject_id + '_b1_' + "%d"%(1e3*b1) + '_b2_' + "%d"%(1e3*b2) + "_flat"
             opt_flat = tf.train.RMSPropOptimizer(current_eta, momentum = m).minimize(yx_cost + beta1 * reg1 + beta2 * reg2_flat, global_step = global_step)
             result_flat = train(sess, opt_flat, kappa, beta1, beta2, y, b1, b2, subject_id)            
+            result2d_flat = e2d.getResult2D(result_flat[0], yb, mask_var_sub, mask_fix_sub, map_h, map_w)
             summary_flat = e2d.resultSummary(result_flat[0], yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, mask_var_sub, mask_fix_idx, mask_fix_sub, thisDir, suffix_flat, subject_id)
             corr_azimuth_flat[i1,i2] = summary_flat[0]
             corr_altitude_flat[i1,i2] = summary_flat[1]
             corr_pa_flat[i1,i2] = summary_flat[2]
-
-
-            ## Euclidean distance in 3D as a control
-            #need a normalization factor for b2/reg2??
-            suffix_euc = subject_id + '_b1_' + "%d"%(1e3*b1) + '_b2_' + "%d"%(1e3*b2) + "_euc"
-            opt_euc = tf.train.RMSPropOptimizer(current_eta, momentum = m).minimize(yx_cost + beta1 * reg1 + beta2 * reg2_euc, global_step = global_step)
-            result_euc = train(sess, opt_euc, kappa, beta1, beta2, y, b1, b2, subject_id)            
-            summary_euc = e2d.resultSummary(result_euc[0], yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, mask_var_sub, mask_fix_idx, mask_fix_sub, thisDir, suffix_euc, subject_id)
-            corr_azimuth_euc[i1,i2] = summary_euc[0]
-            corr_altitude_euc[i1,i2] = summary_euc[1]
-            corr_pa_euc[i1,i2] = summary_euc[2]
             
+            savemat(thisDir+'/summary_'+subject_id + suffix +'.mat',
+                    {'result2d': result2d, 'result2d_flat': result2d_flat,
+                     'b1': b1, 'b2': b2})
+            
+
+          
 
     #summary across simulations
     plt.subplot(331);
@@ -330,15 +327,7 @@ for ids in range(0,len(all_ids)):
     plt.subplot(336);
     plt.imshow(corr_pa_flat, origin='lower'); plt.clim(.5, 1);
 
-    plt.subplot(337);
-    plt.imshow(corr_azimuth_euc, origin='lower'); plt.title('Euclidean dist in 3d brain'); plt.clim(.5, 1); plt.xlabel('b2: inter-areal path length'); plt.ylabel('b1: intra-areal smoothness')
 
-    plt.subplot(338);
-    plt.imshow(corr_altitude_euc, origin='lower'); plt.clim(.5, 1); plt.colorbar; 
-    
-    plt.subplot(339);
-    plt.imshow(corr_pa_euc, origin='lower'); plt.clim(.5, 1);
-    
     plt.draw()
     plt.gcf().set_size_inches(20, 15)
     plt.savefig(thisDir+'/summary_correlation_'+subject_id, dpi=200)
@@ -346,7 +335,6 @@ for ids in range(0,len(all_ids)):
 
     savemat(thisDir+'/summary_correlation_'+subject_id +'.mat', 
              {'corr_azimuth': corr_azimuth,'corr_altitude': corr_altitude, 'corr_pa': corr_pa,
-              'corr_azimuth_euc': corr_azimuth_euc,'corr_altitude_euc': corr_altitude_euc, 'corr_pa_euc': corr_pa_euc,
               'corr_azimuth_flat': corr_azimuth_flat,'corr_altitude_flat': corr_altitude_flat,  'corr_pa_flat': corr_pa_flat});
     
     

@@ -209,7 +209,6 @@ def showCostFuncTrajectory(reg1_all, reg2_all, thisDir, suffix):
 
 def resultSummary(result, yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, mask_var_sub, mask_fix_idx, mask_fix_sub, thisDir, suffix, subject_id):
   
-
         #convert from cartesian to polar coordinates
         result_ecc, result_pa = dst.cartesian_to_polar(result[:,0],result[:,1])
         result_pol = np.column_stack((result_ecc,result_pa)) #[ecc, pa]
@@ -221,11 +220,7 @@ def resultSummary(result, yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, 
         retinotopy_pol = np.column_stack((retinotopy_ecc,retinotopy_pa)) #[ecc, pa] in [deg]
         
         # result in cartesian coordinate
-        result2d = np.nan * np.ones((map_h,map_w,2))
-        for pp in range(0,len(mask_var_idx)):
-            result2d[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = result[pp,:]
-        for qq in range(0,len(mask_fix_idx)):
-            result2d[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = yb[qq,:]
+        result2d = getResult2D(result, yb, mask_var_sub, mask_fix_sub, map_h, map_w)
         plt.subplot(121); plt.imshow(result2d[:,:,0].T, origin='lower'); plt.colorbar(); plt.title('simulated azimuth')
         plt.subplot(122); plt.imshow(result2d[:,:,1].T, origin='lower'); plt.colorbar(); plt.title('simulated altitude')
         plt.draw()
@@ -233,32 +228,16 @@ def resultSummary(result, yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, 
         plt.savefig(thisDir+'/simulated_retinotopy_cartesian_'+suffix, dpi=200)
         
         # result in polar coordinate
-        result2d_pol = np.nan * np.ones((map_h,map_w,2))
-        for pp in range(0,len(mask_var_idx)):
-            result2d_pol[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = result_pol[pp,:]
-        for qq in range(0,len(mask_fix_idx)):
-            result2d_pol[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = yb_pol[qq,:]
+        result2d_pol = getResult2D(result_pol, yb_pol, mask_var_sub, mask_fix_sub, map_h, map_w)
         plt.subplot(121); plt.imshow(result2d_pol[:,:,0].T, origin='lower'); plt.title('simulated eccentricity')
         plt.subplot(122); plt.imshow(result2d_pol[:,:,1].T, origin='lower', vmin=0, vmax=361, cmap='gist_rainbow_r'); plt.title('simulated polar angle')
         plt.draw()
         plt.gcf().set_size_inches(20, 10)
         plt.savefig(thisDir+'/simulated_retinotopy_polar_'+suffix, dpi=200)
         
-        # initial condition
-        # init2d = np.nan * np.ones((map_h,map_w,2))
-        # for pp in range(0,len(mask_var_idx)):
-        #     init2d[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = y0[pp,:]
-        # for qq in range(0,len(mask_fix_idx)):
-        #     init2d[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = yb[qq,:]
-        # plt.subplot(121); plt.imshow(init2d[:,:,0].T, origin='lower'); plt.colorbar(); plt.title('azimuth')
-        # plt.subplot(122); plt.imshow(init2d[:,:,1].T, origin='lower'); plt.colorbar(); plt.title('altitude')
-
+       
         # original data in cartesian coordinate
-        orig2d = np.nan * np.ones((map_h,map_w,2))
-        for pp in range(0,len(mask_var_idx)):
-            orig2d[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = retinotopy[mask_var_idx[pp],:]
-        for qq in range(0,len(mask_fix_idx)):
-            orig2d[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = retinotopy[mask_fix_idx[qq],:]
+        orig2d = getRetinotopy2D(retinotopy, mask_fix_idx, mask_var_idx, mask_fix_sub, mask_var_sub, map_h, map_w)
         plt.subplot(121); plt.imshow(orig2d[:,:,0].T, origin='lower'); plt.colorbar(); plt.title('azimuth')
         plt.subplot(122); plt.imshow(orig2d[:,:,1].T, origin='lower'); plt.colorbar(); plt.title('altitude')
         plt.draw()
@@ -266,11 +245,7 @@ def resultSummary(result, yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, 
         plt.savefig(thisDir+'/original_retinotopy_cartesian_' + subject_id, dpi=200)
 
         #original data in polar coordinate
-        orig2d_pol = np.nan * np.ones((map_h,map_w,2))
-        for pp in range(0,len(mask_var_idx)):
-            orig2d_pol[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = retinotopy_pol[mask_var_idx[pp],:]
-        for qq in range(0,len(mask_fix_idx)):
-            orig2d_pol[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = retinotopy_pol[mask_fix_idx[qq],:]
+        orig2d_pol = getRetinotopy2D(retinotopy_pol, mask_fix_idx, mask_var_idx, mask_fix_sub, mask_var_sub, map_h, map_w)
         plt.subplot(121); plt.imshow(orig2d_pol[:,:,0].T, origin='lower'); plt.title('eccentricity')
         plt.subplot(122); plt.imshow(orig2d_pol[:,:,1].T, origin='lower', vmin=0, vmax=361, cmap='gist_rainbow_r'); plt.title('polar angle')
         plt.draw()
@@ -291,9 +266,23 @@ def resultSummary(result, yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, 
 
         #mask_var_idx = np.concatenate([mask_idx[index] for index in varIdx])
         #corr_azimuth[thisArea] = np.corrcoef(retinotopy[mask_idx[index] for index in thisArea,0], result[:,0])[0,1];
-        corr_azimuth_v2 = np.corrcoef(retinotopy[mask_idx[1],0], result[0:len(mask_idx[1]),0])[0,1];
-        corr_altitude_v2 = np.corrcoef(retinotopy[mask_idx[1],1], result[0:len(mask_idx[1]),1])[0,1];
+        #corr_azimuth_v2 = np.corrcoef(retinotopy[mask_idx[1],0], result[0:len(mask_idx[1]),0])[0,1];
+        #corr_altitude_v2 = np.corrcoef(retinotopy[mask_idx[1],1], result[0:len(mask_idx[1]),1])[0,1];
         
         return corr_azimuth, corr_altitude, corr_pa
     
-    
+def getRetinotopy2D(retinotopy, mask_fix_idx, mask_var_idx, mask_fix_sub, mask_var_sub, map_h, map_w):
+    retinotopy2D = np.nan * np.ones((map_h,map_w,2))
+    for pp in range(0,len(mask_var_idx)):
+        retinotopy2D[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = retinotopy[mask_var_idx[pp],:]
+    for qq in range(0,len(mask_fix_idx)):
+        retinotopy2D[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = retinotopy[mask_fix_idx[qq],:]
+    return retinotopy2D    
+
+def getResult2D(result, yb, mask_var_sub, mask_fix_sub, map_h, map_w):
+    result2d = np.nan * np.ones((map_h,map_w,2))
+    for pp in range(0,len(mask_var_sub)):
+        result2d[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = result[pp,:]
+    for qq in range(0,len(mask_fix_sub)):
+        result2d[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = yb[qq,:]
+    return result2d
