@@ -32,7 +32,7 @@ from scipy.io import savemat
 
 
 
-all_ids = ['114823','157336','585256','581450','725751','avg']; #from Ribeiro 2023 Fig1
+all_ids = ['114823']#,'157336','585256','581450','725751','avg']; #from Ribeiro 2023 Fig1
 loadDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
 
 
@@ -65,6 +65,8 @@ for ids in range(0,len(all_ids)):
     
     eta0 = 0.05      # initial lerning rate
     m = 0.8         # momentum
+    numb1 = 10;
+    numb2 = 10;
     
     # add small mount of noise to the prototypes, which might give the solution some variations
     prototype_noise = False
@@ -238,17 +240,19 @@ for ids in range(0,len(all_ids)):
         sess.run(tf.global_variables_initializer())
         k = 30.0
         nIter = 1000  #1000
+        yx_cost_all = np.zeros((nIter,1))
         reg1_all = np.zeros((nIter,1))
         reg2_all = np.zeros((nIter,1))
         for i in range(nIter):
             sess.run(opt, {kappa: k, beta1: b1, beta2: b2})
             k = k - k*5/nIter #0.005
             #print(sess.run(reg2))
+            yx_cost_all[i] = sess.run(yx_cost, {kappa: k})
             reg1_all[i] = sess.run(reg1)
             reg2_all[i] = sess.run(reg2)
                 
         yfinal = sess.run(y)
-        return yfinal, reg1_all, reg2_all
+        return yfinal, yx_cost_all, reg1_all, reg2_all
 
 
         
@@ -257,9 +261,6 @@ for ids in range(0,len(all_ids)):
     # run simulation in (beta1, beta2) space
     ###########################
         
-       
-    numb1 = 1;
-    numb2 = 1;
     corr_azimuth = np.zeros((numb1,numb2))
     corr_altitude = np.zeros((numb1,numb2))
     corr_pa = np.zeros((numb1,numb2))
@@ -303,7 +304,7 @@ for ids in range(0,len(all_ids)):
             
             savemat(thisDir+'/summary_'+subject_id + suffix +'.mat',
                     {'result2d': result2d, 'result2d_flat': result2d_flat,
-                     'b1': b1, 'b2': b2})
+                     'b1': b1, 'b2': b2, 'result': result, 'result_flat': result_flat})
             
 
           
