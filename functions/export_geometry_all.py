@@ -21,7 +21,7 @@ import functions.dstools as dst
 from scipy.io import savemat
 
 
-doAvg = True;
+doAvg = False;
 showFig = False;
 
 loadDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/data/';
@@ -30,8 +30,9 @@ saveDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
 stdSphere = nib.load(osp.join(loadDir,'S1200_7T_Retinotopy181.L.sphere.32k_fs_LR.surf.gii'));
 
 subject_id_all = dst.getSubjectId(loadDir+'cifti_polarAngle_all.mat')
-    #subject_id_all = ['114823','157336','585256','114823','581450','725751']; #from Ribeiro 2023 Fig1
+#subject_id_all = ['114823','157336','585256','114823','581450','725751']; #from Ribeiro 2023 Fig1
 
+#ng azimuth in 100610
 
 if doAvg:
     PAData_mat_all = np.zeros((100,100,len(subject_id_all)));
@@ -40,7 +41,7 @@ if doAvg:
     
 
 
-for ids in range(0,0):#len(subject_id_all)):
+for ids in range(0,len(subject_id_all)):
     subject_id = subject_id_all[ids]
     # x-y grid for 2D matrix representation
     #grid_x, grid_y = np.mgrid[40:120, 0:60] #dorsal only
@@ -88,8 +89,12 @@ for ids in range(0,0):#len(subject_id_all)):
     #theta = dst.computeFieldSign(PAData_mat, ECCData_mat, smoothing = True, binarizing = False)
     #plt.imshow(theta[:,:], extent=[20,120, 0,100], origin='lower', cmap='viridis')
     
-    # convert to alititude and azimuth
-    azimuth, altitude = dst.polar_to_cartesian(ECCData_mat, PAData_mat)
+    # convert to alititude and azimuth [deg]
+    #azimuth, altitude = dst.polar_to_cartesian(ECCData_mat, np.pi/180*PAData_mat) NG for azimuth 
+    azimuth_L, altitude_L = dst.polar_to_cartesian(ECCData_L, np.pi/180*PAData_L) 
+    azimuth = dst.gifti2mat(stdSphere, azimuth_L, final_mask_L, grid_x, grid_y); #[deg]
+    altitude = dst.gifti2mat(stdSphere, altitude_L, final_mask_L, grid_x, grid_y); #[deg]
+    
     
     # load curvature data (used for sanity check in compute_minimal_path_femesh_individual), convert to gifti space, then to 2D matrix
     data = scipy.io.loadmat(osp.join(loadDir, 'cifti_curvature_all.mat'))['cifti_curvature']

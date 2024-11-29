@@ -3,7 +3,7 @@
 clear all
 
 %% extract subject ids
-subject_id = getSubjectid;
+subject_id = getSubjectId;
 
 %subject_id = {'avg','114823','157336','585256','114823','581450','725751'};
 % saveDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/data/';

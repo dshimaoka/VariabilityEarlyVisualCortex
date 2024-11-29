@@ -1,9 +1,12 @@
-function [connectedPixels, connectedMatrix] = findConnectedPixels(matrix, label, targetPixels)
+function [connectedPixels, connectedMatrix] = findConnectedPixels(matrix, label, targetPixels, flipy)
 %[connectedPixels, connectedMatrix] = findConnectedPixels(matrix, label)
 % select coordinates from GUI
 %[connectedPixels, connectedMatrix] = findConnectedPixels(matrix, label, targetPixels)
 % targetPixels(:,1) = x coordinates
 % targetPixels(:,2) = y coordinates
+if nargin < 4
+    flipy = false;
+end
 
 if nargin < 3
     targetPixels = [];
@@ -12,6 +15,9 @@ end
 if isempty(targetPixels)
     % Display the matrix as an image
     imagesc(matrix + 2); % Shifting the values to {1, 2, 3} for better visualization
+    if flipy
+        axis xy
+    end
     %colormap('jet');
     colorbar;
     title(label);

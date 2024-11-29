@@ -83,18 +83,18 @@ fig=figure(10); clf
 set(fig,'position',[0 0 1980 1080]);
 ax(1)=subplot(3,4,1);
 imagesc(xdom,ydom,kmap_hor,[-10 10]),
-axis xy, colorbar
+axis xy, colorbar;
 title('1. Horizontal (azim deg)')
 
 ax(2)=subplot(3,4,2);
 imagesc(xdom,ydom,kmap_vert,[-10 10]),
-axis xy, colorbar
+axis xy, colorbar;
 title('2. Vertical (alt deg)')
 
 %% Plotting visual field sign and its threshold
 
 figure(10), ax(3)=subplot(3,4,3);
-imagesc(xdom,ydom,VFS), axis xy
+imagesc(xdom,ydom,VFS), axis xy;
 colorbar
 title(['3. VFS after filtering: ' num2str(smoothingFac)])
 
@@ -109,14 +109,14 @@ id = find(imseg);
 imdum = imseg.*VFS; imdum(id) = imdum(id)+1.1;
 
 ploteccmap(imdum,[.1 2.1],pixpermm);
-colorbar off
-axis xy
+colorbar off;
+axis xy;
 title(['4. +/' num2str(threshold) 'x s.d. '])
 
 
 patchSign = getPatchSign(imseg,VFS);
 
-figure(10), ax(5)=subplot(3,4,5),
+figure(10), ax(5)=subplot(3,4,5);
 ploteccmap(patchSign,[1.1 2.1],pixpermm);
 title('watershed')
 colorbar off
@@ -132,7 +132,7 @@ if doImopen
 
     patchSign = getPatchSign(imseg,VFS);
 
-    figure(10), ax(6)=subplot(3,4,6),
+    figure(10), ax(6)=subplot(3,4,6);
     ploteccmap(patchSign,[1.1 2.1],pixpermm);
     title('watershed')
     colorbar off
@@ -195,7 +195,7 @@ imseg(:,1:2) = 0; imseg(:,end-1:end) = 0; imseg(1:2,:) = 0;  imseg(end-1:end,:) 
 
 
 if doImopen
-    figure(10), ax(6)=subplot(3,4,6)
+    figure(10), ax(6)=subplot(3,4,6);
     hold on
     contour(xdom,ydom,imbound,[.5 .5],'k')
 end
@@ -221,7 +221,7 @@ if doThinning
 
     patchSign = getPatchSign(im,VFS);
 
-    figure(10), ax(7)=subplot(3,4,7),
+    figure(10), ax(7)=subplot(3,4,7);
     ploteccmap(patchSign,[1.1 2.1],pixpermm);
     hold on,
     contour(xdom,ydom,im,[.5 .5],'k')
@@ -237,11 +237,11 @@ end
 %AreaInfo.kmap_rad = kmap_rad;
 AreaInfo.kmap_rad = atan(  sqrt( tan(kmap_hor*pi/180).^2 + (tan(kmap_vert*pi/180).^2)./(cos(kmap_hor*pi/180).^2)  )  )*180/pi;  %Eccentricity
 
-ax(8)=subplot(3,4,8)
+ax(8)=subplot(3,4,8);
 ploteccmap(AreaInfo.kmap_rad.*im,[0 5],pixpermm);
 hold on
-contour(xdom,ydom,im,[.5 .5],'k')
-axis xy
+contour(xdom,ydom,im,[.5 .5],'k');
+axis xy;
 title('8. Eccentricity map')
 
 
@@ -266,7 +266,7 @@ end
 
 [im fuseflag] = fusePatchesX(im,kmap_hor,kmap_vert,pixpermm);
 
-figure(10), ax(9)=subplot(3,4,9),
+figure(10), ax(9)=subplot(3,4,9);
 ploteccmap(im.*AreaInfo.kmap_rad,[0 5],pixpermm);
 title('9. Split redundant patches. Fuse exclusive patches.')
 
@@ -286,45 +286,45 @@ vfs_th(vfs_th == 0.1) = -1;
 
 %%
 
-subplot(3,4,1)
+subplot(3,4,1);
 hold on,
 contour(xdom,ydom,im,[.5 .5],'k')
 
-subplot(3,4,2)
+subplot(3,4,2);
 hold on,
 contour(xdom,ydom,im,[.5 .5],'k')
 
-subplot(3,4,3)
+subplot(3,4,3);
 hold on,
 contour(xdom,ydom,im,[.5 .5],'k')
 
 [patchSign areaSign] = getPatchSign(im,VFS);
-figure(10), ax(10)=subplot(3,4,10)
-ploteccmap(patchSign,[1.1 2.1],pixpermm); colorbar off
+figure(10), ax(10)=subplot(3,4,10);
+ploteccmap(patchSign,[1.1 2.1],pixpermm); colorbar off;
 hold on
-contour(xdom,ydom,im,[.5 .5],'k')
-axis xy
+contour(xdom,ydom,im,[.5 .5],'k');
+axis xy;
 
-title('10. visual areas')
+title('10. visual areas');
 
 
 %% Plot contours
 
-figure(10)
-ax(11)=subplot(3,4,11)
-contour(xdom,ydom,kmap_vert.*im,[-90:4:90],'r')
+figure(10);
+ax(11)=subplot(3,4,11);
+contour(xdom,ydom,kmap_vert.*im,[-90:4:90],'r');
 hold on
-contour(xdom,ydom,kmap_hor.*im,[-90:4:90],'k')
-axis ij
-title('Red: Vertical Ret;  Black: Horizontal Ret')
-axis xy
-xlim([xdom(1) xdom(end)]), ylim([ydom(1) ydom(end)])
+contour(xdom,ydom,kmap_hor.*im,[-90:4:90],'k');
+axis ij;
+title('Red: Vertical Ret;  Black: Horizontal Ret');
+axis xy;
+xlim([xdom(1) xdom(end)]), ylim([ydom(1) ydom(end)]);
 
 %% Get magnification factor images
 [JacIm prefAxisMF Distort] = getMagFactors(kmap_hor,kmap_vert,pixpermm);
 
-figure(10)
-ax(12)=subplot(3,4,12)
+figure(10);
+ax(12)=subplot(3,4,12);
 plotmap(im.*sqrt(1./abs(JacIm)),[sqrt(.000001) sqrt(.003)],pixpermm);  %This doesn't work
 title('Mag fac (mm2/deg2)')
 
@@ -334,8 +334,8 @@ DdomY = 10:10:dim(1);
 prefAxisMF = prefAxisMF(DdomY,DdomX);
 Distort = Distort(DdomY,DdomX);
 
-figure(10)
-subplot(3,4,12)
+figure(10);
+subplot(3,4,12);
 hold on,
 contour(xdom,ydom,im,[.5 .5],'k');
 for i = 1:length(DdomX)
@@ -345,7 +345,7 @@ for i = 1:length(DdomX)
         ypart = 5*Distort(j,i)*sin(prefAxisMF(j,i)*pi/180);
 
         if im(DdomY(j),DdomX(i))
-            hold on, plot([DdomX(i)-xpart DdomX(i)+xpart]*mmperpix,[DdomY(j)-ypart DdomY(j)+ypart]*mmperpix,'k')
+            hold on, plot([DdomX(i)-xpart DdomX(i)+xpart]*mmperpix,[DdomY(j)-ypart DdomY(j)+ypart]*mmperpix,'k');
         end
 
     end
@@ -387,14 +387,14 @@ for i = 1:dim(1)
 end
 
 
-image(xdom,ydom,imout), axis xy
+image(xdom,ydom,imout), axis xy;
 
 eccdom = round(linspace(rng(1),rng(2),5));
 for i = 1:length(eccdom)
     domcell{i} = eccdom(i);
 end
 iddom = linspace(1,64,length(eccdom));
-colorbar('YTick',iddom,'YTickLabel',domcell)
+colorbar('YTick',iddom,'YTickLabel',domcell);
 
 function imout = plotehorvertmap(im,rng)
 
@@ -431,17 +431,17 @@ for i = 1:dim(1)
 end
 
 
-image(xdom,ydom,imout), axis xy
+image(xdom,ydom,imout), axis xy;
 
 eccdom = round(linspace(rng(1),rng(2),5));
 for i = 1:length(eccdom)
     domcell{i} = eccdom(i);
 end
 iddom = linspace(1,64,length(eccdom));
-colorbar('YTick',iddom,'YTickLabel',domcell)
+colorbar('YTick',iddom,'YTickLabel',domcell);
 
 hold on,
-contour(xdom,ydom,bg,[.5 .5],'k')
+contour(xdom,ydom,bg,[.5 .5],'k');
 
 
 
