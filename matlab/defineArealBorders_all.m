@@ -7,15 +7,15 @@
 
 %subject_id =  {'157336','585256','114823','581450','725751','avg'};
 %subject_id = getSubjectId;
-subject_id = {'910241',...
-'926862','927359','942658','943862','951457','958976','966975'};
+subject_id = {'105923','111514','131722','169343','169344',...
+'644246','690152','765864','951457','958976'};
 
 %ng
 saveDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
 
 th_retinotopy = 2; %1; %threshold for spatial gradient
-threshold_vfs = 0.7;%0.3 default threshold for vfs
-smoothingFac = 1;%3 %smoothing in Garrett 2014
+threshold_vfs = 1;%0.3 default threshold for vfs
+smoothingFac = .5;%3 %smoothing in Garrett 2014
 
 ngIdx = [];
 for sid = 1:length(subject_id)
