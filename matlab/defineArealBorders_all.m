@@ -6,13 +6,16 @@
 % this script requires imageProcessing toolbox (imfill, imgaussfilt)
 
 %subject_id =  {'157336','585256','114823','581450','725751','avg'};
-subject_id = getSubjectId;
+%subject_id = getSubjectId;
+subject_id = {'910241',...
+'926862','927359','942658','943862','951457','958976','966975'};
 
 %ng
 saveDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
 
-smoothingFac = 2;%3
-th_retinotopy = 2; %1;
+th_retinotopy = 2; %1; %threshold for spatial gradient
+threshold_vfs = 0.7;%0.3 default threshold for vfs
+smoothingFac = 1;%3 %smoothing in Garrett 2014
 
 ngIdx = [];
 for sid = 1:length(subject_id)
@@ -25,7 +28,8 @@ for sid = 1:length(subject_id)
         load(retinotopyFilename, 'grid_azimuth','grid_altitude') %'vfs', 'grid_ecc'
 
         % get mask within which retinotopy gradient is smooth
-        [mask, oddball_inner, oddball_outer] = getMask(pi/180 *grid_azimuth, pi/180 *grid_altitude, th_retinotopy);
+        [mask, oddball_inner, oddball_outer] = getMask(pi/180 *grid_azimuth, pi/180 *grid_altitude, ...
+            th_retinotopy);
 
         % interpolate pixels with odd values inside the mask
         interpolated = fillmissing2(pi/180 *grid_azimuth+1i*pi/180 *grid_altitude, 'linear','MissingLocations',oddball_inner);
@@ -38,7 +42,7 @@ for sid = 1:length(subject_id)
         elseif any(strcmp(subject_id{sid},{'725751'}))
             threshold = .5;
         else
-            threshold = .3;
+            threshold = threshold_vfs;
         end
 
         [~,vfs_th, vfs_f, fig] = getHumanAreasX(grid_azimuth_i, grid_altitude_i, ...
