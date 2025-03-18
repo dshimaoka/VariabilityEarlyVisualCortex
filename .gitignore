@@ -35,6 +35,7 @@
 *.nii
 *.border
 *.scene
+*.simg
 *.gz
 *.stl
 *.mat
