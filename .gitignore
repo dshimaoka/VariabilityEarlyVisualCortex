@@ -41,6 +41,7 @@
 *.mat
 **/data/*
 **/elasticnet3D/*.mat
+itksnap_3.8.0_20201208.simg
 
 # TPM folders
 tpms/*/
