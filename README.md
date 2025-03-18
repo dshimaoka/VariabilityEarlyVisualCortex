@@ -16,7 +16,7 @@ For visualization and further analysis, we recommend using [NeuroDesk](https://w
 1. Clone this repository (or a forked version of this repository):
 
 ```bash
-    git clone https://github.com/felenitaribeiro/VariabilityEarlyVisualCortex.git
+    git clone https://github.com/dshimaoka/VariabilityEarlyVisualCortex.git
 ```   
 
 2. Download the available data at [Balsa](https://balsa.wustl.edu/study/9Zkk) following these steps: https://www.neurodesk.org/tutorials/functional_imaging/connectomeworkbench/ and extract to *./matlab*
@@ -73,5 +73,3 @@ Please cite our manuscript if it was somewhat helpful for you :wink:
     }
 
 
-## Contact
-Fernanda Ribeiro <[fernanda.ribeiro@uq.edu.au](fernanda.ribeiro@uq.edu.au)>
