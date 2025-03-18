@@ -36,7 +36,6 @@
 *.border
 *.scene
 *.gz
-*.simg
 *.stl
 *.mat
 **/data/*
