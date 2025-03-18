@@ -29,17 +29,18 @@
 **/*.gif
 
 # Data
-**/*.tar.gz
-**/*.tar
-**/*.gii
-**/*.nii
-**/*.border
-**/*.scene
-**/*.gz
-**/*.simg
-**/*.stl
-**/*.mat
+*.tar.gz
+*.tar
+*.gii
+*.nii
+*.border
+*.scene
+*.gz
+*.simg
+*.stl
+*.mat
 **/data/*
+**/elasticnet3D/*.mat
 
 # TPM folders
 tpms/*/
@@ -49,5 +50,6 @@ tpms/*/
 
 **/matlab/fieldtrip/
 **/matlab/gifti/
+
 
 **/obs/*
