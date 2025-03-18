@@ -39,6 +39,7 @@
 **/*.simg
 **/*.stl
 **/*.mat
+**/data/*
 
 # TPM folders
 tpms/*/
