@@ -1,5 +1,5 @@
-subject_id = {'avg','114823','157336','585256','581450','725751'};
-%subject_id = getSubjectid;
+% subject_id = {'avg','114823','157336','585256','581450','725751'};
+subject_id = setxor(getSubjectId, {'114823','157336','585256','581450','725751'});
 %114823: meshing failed for hmax of 2 and hmin of 1
 
 %loadDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/data/';
@@ -8,8 +8,46 @@ saveDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
 type = 'midthickness';%'white' %cannot generateMesh with 'pial'
 hmax = 2; %1: fine but too slow, 3: too coarse
 
-for sid= 1:numel(subject_id) 
-    % from export_geometry_individual.py
+for sid= 1:numel(subject_id)
+
+%     sid=22
+% Error using compute_minimal_path_femesh_all
+% Meshing failed for Hmax of 2 and Hmin of 1. Try adjusting Hmax and Hmin.
+
+% sid=25
+% Unable to save file
+% '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/137128/minimal_path_midthickness_hmax2_137128.mat'.
+% The file could not be closed, and might now be corrupt.
+
+% sid=35
+% Error using compute_minimal_path_femesh_all
+% Meshing failed for Hmax of 2 and Hmin of 1. Try adjusting Hmax and Hmin.
+
+%sid=68
+% Unable to find file or directory
+% '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/187345/arealBorder_187345'.
+
+%sid=74
+% Error using compute_minimal_path_femesh_all
+% Meshing failed for Hmax of 2 and Hmin of 1. Try adjusting Hmax and Hmin.
+
+%sid=76
+% Error using load
+% Unable to find file or directory
+% '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/196144/arealBorder_196144'.
+% 
+% Error in compute_minimal_path_femesh_all (line 39)
+%     load(fullfile(saveDir,subject_id{sid},['arealBorder_' subject_id{sid}]),...
+
+%sid=80
+% Error using compute_minimal_path_femesh_all
+% Meshing failed for Hmax of 2 and Hmin of 1. Try adjusting Hmax and Hmin.
+
+% %sid=100
+% Error using compute_minimal_path_femesh_all
+% Meshing failed for Hmax of 2 and Hmin of 1. Try adjusting Hmax and Hmin.
+
+% from export_geometry_individual.py
     load(fullfile(saveDir, subject_id{sid}, ['geometry_retinotopy_'  subject_id{sid}   '.mat']),...
         'array_3d','grid_x','grid_y', 'grid_curv');%,'mask');
     

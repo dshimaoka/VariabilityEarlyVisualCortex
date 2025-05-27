@@ -65,8 +65,8 @@ for ids in range(0,len(all_ids)):
     
     eta0 = 0.05      # initial lerning rate
     m = 0.8         # momentum
-    numb1 = 10;
-    numb2 = 10;
+    numb1 = 1;#10;
+    numb2 = 1;#10;
     
     # add small mount of noise to the prototypes, which might give the solution some variations
     prototype_noise = False
