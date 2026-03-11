@@ -209,6 +209,9 @@ def showCostFuncTrajectory(reg1_all, reg2_all, thisDir, suffix):
 
 def resultSummary(result, yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, mask_var_sub, mask_fix_idx, mask_fix_sub, thisDir, suffix, subject_id):
   
+        import os
+        from pathlib import Path
+        
         #convert from cartesian to polar coordinates
         result_ecc, result_pa = dst.cartesian_to_polar(result[:,0],result[:,1])
         result_pol = np.column_stack((result_ecc,result_pa)) #[ecc, pa]
@@ -225,7 +228,10 @@ def resultSummary(result, yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, 
         plt.subplot(122); plt.imshow(result2d[:,:,1].T, origin='lower'); plt.colorbar(); plt.title('simulated altitude')
         plt.draw()
         plt.gcf().set_size_inches(20, 10)
-        plt.savefig(thisDir+'/simulated_retinotopy_cartesian_'+suffix, dpi=200)
+        figFile_cart = Path(thisDir+'/simulated_retinotopy_cartesian_'+suffix+'png')
+        if figFile_cart.is_file():
+            os.remove(figFile_cart) 
+        plt.savefig(figFile_cart, dpi=200)
         
         # result in polar coordinate
         result2d_pol = getResult2D(result_pol, yb_pol, mask_var_sub, mask_fix_sub, map_h, map_w)
@@ -233,25 +239,32 @@ def resultSummary(result, yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, 
         plt.subplot(122); plt.imshow(result2d_pol[:,:,1].T, origin='lower', vmin=0, vmax=361, cmap='gist_rainbow_r'); plt.title('simulated polar angle')
         plt.draw()
         plt.gcf().set_size_inches(20, 10)
-        plt.savefig(thisDir+'/simulated_retinotopy_polar_'+suffix, dpi=200)
+        figFile_pol = Path(thisDir+'/simulated_retinotopy_polar_'+suffix+'png')
+        if figFile_pol.is_file():
+            os.remove(figFile_pol) 
+        plt.savefig(figFile_pol, dpi=200)
         
        
         # original data in cartesian coordinate
-        orig2d = getRetinotopy2D(retinotopy, mask_fix_idx, mask_var_idx, mask_fix_sub, mask_var_sub, map_h, map_w)
-        plt.subplot(121); plt.imshow(orig2d[:,:,0].T, origin='lower'); plt.colorbar(); plt.title('azimuth')
-        plt.subplot(122); plt.imshow(orig2d[:,:,1].T, origin='lower'); plt.colorbar(); plt.title('altitude')
-        plt.draw()
-        plt.gcf().set_size_inches(20, 10)
-        plt.savefig(thisDir+'/original_retinotopy_cartesian_' + subject_id, dpi=200)
+        figFile_cart_ori = Path(thisDir+'/original_retinotopy_cartesian_'+subject_id+'png')
+        if ~figFile_cart_ori.is_file():        
+            orig2d = getRetinotopy2D(retinotopy, mask_fix_idx, mask_var_idx, mask_fix_sub, mask_var_sub, map_h, map_w)
+            plt.subplot(121); plt.imshow(orig2d[:,:,0].T, origin='lower'); plt.colorbar(); plt.title('azimuth')
+            plt.subplot(122); plt.imshow(orig2d[:,:,1].T, origin='lower'); plt.colorbar(); plt.title('altitude')
+            plt.draw()
+            plt.gcf().set_size_inches(20, 10)
+            plt.savefig(figFile_cart_ori, dpi=200)
 
         #original data in polar coordinate
-        orig2d_pol = getRetinotopy2D(retinotopy_pol, mask_fix_idx, mask_var_idx, mask_fix_sub, mask_var_sub, map_h, map_w)
-        plt.subplot(121); plt.imshow(orig2d_pol[:,:,0].T, origin='lower'); plt.title('eccentricity')
-        plt.subplot(122); plt.imshow(orig2d_pol[:,:,1].T, origin='lower', vmin=0, vmax=361, cmap='gist_rainbow_r'); plt.title('polar angle')
-        plt.draw()
-        plt.gcf().set_size_inches(20, 10)
-        plt.savefig(thisDir+'/original_retinotopy_polar_' + subject_id, dpi=200)
-        plt.close()
+        figFile_pol_ori = Path(thisDir+'/original_retinotopy_polar_'+subject_id+'png')
+        if ~figFile_pol_ori.is_file():        
+            orig2d_pol = getRetinotopy2D(retinotopy_pol, mask_fix_idx, mask_var_idx, mask_fix_sub, mask_var_sub, map_h, map_w)
+            plt.subplot(121); plt.imshow(orig2d_pol[:,:,0].T, origin='lower'); plt.title('eccentricity')
+            plt.subplot(122); plt.imshow(orig2d_pol[:,:,1].T, origin='lower', vmin=0, vmax=361, cmap='gist_rainbow_r'); plt.title('polar angle')
+            plt.draw()
+            plt.gcf().set_size_inches(20, 10)
+            plt.savefig(figFile_pol_ori, dpi=200)
+            plt.close()
 
         # deviance between original and simulation in [deg]
         #dev2d = np.sqrt((result2d[:,:,0]-orig2d[:,:,0])**2 + (result2d[:,:,1]-orig2d[:,:,1])**2)
