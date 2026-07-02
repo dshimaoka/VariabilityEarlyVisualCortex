@@ -228,18 +228,35 @@ for ids in range(0,len(all_ids)):
                         tf.reduce_sum(yx_gauss, axis=0)))
         
         #### regularization term 1 - within area
-        # n is a list of map_h * map_w objects. The i-th item of n is a list containing the indices of nodes neighboring the i-th node
-        n = e2d.neighborhood(map_h, map_w)
-        mask = e2d.make_mask(map_h, map_w, n)
-        #mask = tf.constant(e2d.make_mask(map_h, map_w, n), dtype=tf.float64, name='mask')
+        # # n is a list of map_h * map_w objects. The i-th item of n is a list containing the indices of nodes neighboring the i-th node
+        # n = e2d.neighborhood(map_h, map_w)
+        # mask = e2d.make_mask(map_h, map_w, n)
+        # #mask = tf.constant(e2d.make_mask(map_h, map_w, n), dtype=tf.float64, name='mask')      
+        # # pairwise distance: first use broadcast to calculate pairwise difference
+        # yy_diff = tf.expand_dims(y, 1) - tf.expand_dims(y, 0)
+        # yy_normsq = tf.einsum('ijk,ijk->ij', yy_diff, yy_diff)
+        # yy_normsq_masked = tf.multiply(mask[mask_var_idx[:,np.newaxis], mask_var_idx], 
+        #                                 yy_normsq)
+        # reg1 = tf.reduce_sum(yy_normsq_masked)
         
-        # pairwise distance: first use broadcast to calculate pairwise difference
-        yy_diff = tf.expand_dims(y, 1) - tf.expand_dims(y, 0)
-        yy_normsq = tf.einsum('ijk,ijk->ij', yy_diff, yy_diff)
-        yy_normsq_masked = tf.multiply(mask[mask_var_idx[:,np.newaxis], mask_var_idx], 
-                                       yy_normsq)
-        
-        reg1 = tf.reduce_sum(yy_normsq_masked)
+        def getRegTerm1(distance2D):
+            #extract subscripts used 
+            distance2D_tf_c = np.zeros((len(mask_var_idx),len(mask_var_idx)))
+            for i in range(0,len(mask_var_idx)):
+                for j in range(0,len(mask_var_idx)):
+                    distance2D_tf_c[i,j] = distance2D[np.where(gridIdx == mask_var_idx[i])[0][0],
+                                            np.where(gridIdx == mask_var_idx[j])[0][0]]
+            
+            distance2D_tf = tf.constant(distance2D_tf_c)
+            
+            #src_idx = np.arange(0,len(mask_var_idx))
+            yy_diff = tf.expand_dims(y, 1) - tf.expand_dims(y, 0)
+            yy_normsq = tf.einsum('ijk,ijk->ij', yy_diff, yy_diff) # closeness in vf
+            
+            # strategy5: weighted by 1/exp(distance2D)
+            distance2D_weighted = tf.multiply(1/tf.exp(distance2D_tf), yy_normsq)
+            reg1 = tf.reduce_sum(distance2D_weighted)
+            return reg1
         
         #### regularization term 2 - path in cortex 
         # y: V2 position in visual field [azimuth altitude] (variable)
@@ -265,13 +282,13 @@ for ids in range(0,len(all_ids)):
             return reg2
     
         
+        reg1 = getRegTerm1(distance2D)
         reg2 = getRegTerm2(distance2D)
     
         # Euclidean distance on flat surface as a control
+        reg1_flat = getRegTerm1(distance2D_flat)
         reg2_flat = getRegTerm2(distance2D_flat)
         
-        # Euclidean distance in 3D brain as another control
-        reg2_euc = getRegTerm2(distance2D_euc)
         
         
         #########################
@@ -340,7 +357,7 @@ for ids in range(0,len(all_ids)):
                 
                 ## Minimal path length
                 suffix = tgt + '_' + subject_id + '_b1_' + "%d"%(1e3*b1) + '_b2_' + "%d"%(1e3*b2)
-                saveFile = Path(thisDir+'/summary_'+subject_id + suffix +'.mat')
+                saveFile = Path(thisDir+'/summary_'+subject_id + suffix +'_testb1.mat')
                 if saveFile.is_file():
                     os.remove(saveFile) 
                 
@@ -356,7 +373,7 @@ for ids in range(0,len(all_ids)):
                 ## Euclidean distance on flat surface as a control
                 #need a normalization factor for b2/reg2??
                 suffix_flat = tgt + '_' + subject_id + '_b1_' + "%d"%(1e3*b1) + '_b2_' + "%d"%(1e3*b2) + "_flat"
-                opt_flat = tf.train.RMSPropOptimizer(current_eta, momentum = m).minimize(yx_cost + beta1 * reg1 + beta2 * reg2_flat, global_step = global_step)
+                opt_flat = tf.train.RMSPropOptimizer(current_eta, momentum = m).minimize(yx_cost + beta1 * reg1_flat + beta2 * reg2_flat, global_step = global_step)
                 result_flat = train(sess, opt_flat, kappa, beta1, beta2, y, b1, b2, subject_id)            
                 result2d_flat = e2d.getResult2D(result_flat[0], yb, mask_var_sub, mask_fix_sub, map_h, map_w)
                 summary_flat = e2d.resultSummary(result_flat[0], yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, mask_var_sub, mask_fix_idx, mask_fix_sub, thisDir, suffix_flat, subject_id)
@@ -393,7 +410,7 @@ for ids in range(0,len(all_ids)):
     
         plt.draw()
         plt.gcf().set_size_inches(20, 15)
-        FigFile = Path(thisDir+'/summary_correlation_'+subject_id+'.png')
+        FigFile = Path(thisDir+'/summary_correlation_'+subject_id+'_testb1.png')
         if FigFile.is_file():
             os.remove(FigFile)
             
@@ -402,7 +419,7 @@ for ids in range(0,len(all_ids)):
         print("Done saving summary fig")
         
     
-        SummaryFile = Path(thisDir+'/summary_correlation_'+subject_id +'.mat')
+        SummaryFile = Path(thisDir+'/summary_correlation_'+subject_id +'_testb1.mat')
         if SummaryFile.is_file():
             os.remove(SummaryFile)
             

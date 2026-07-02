@@ -228,7 +228,7 @@ def resultSummary(result, yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, 
         plt.subplot(122); plt.imshow(result2d[:,:,1].T, origin='lower'); plt.colorbar(); plt.title('simulated altitude')
         plt.draw()
         plt.gcf().set_size_inches(20, 10)
-        figFile_cart = Path(thisDir+'/simulated_retinotopy_cartesian_'+suffix+'png')
+        figFile_cart = Path(thisDir+'/simulated_retinotopy_cartesian_'+suffix)
         if figFile_cart.is_file():
             os.remove(figFile_cart) 
         plt.savefig(figFile_cart, dpi=200)
@@ -239,14 +239,14 @@ def resultSummary(result, yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, 
         plt.subplot(122); plt.imshow(result2d_pol[:,:,1].T, origin='lower', vmin=0, vmax=361, cmap='gist_rainbow_r'); plt.title('simulated polar angle')
         plt.draw()
         plt.gcf().set_size_inches(20, 10)
-        figFile_pol = Path(thisDir+'/simulated_retinotopy_polar_'+suffix+'png')
+        figFile_pol = Path(thisDir+'/simulated_retinotopy_polar_'+suffix)
         if figFile_pol.is_file():
             os.remove(figFile_pol) 
         plt.savefig(figFile_pol, dpi=200)
         
        
         # original data in cartesian coordinate
-        figFile_cart_ori = Path(thisDir+'/original_retinotopy_cartesian_'+subject_id+'png')
+        figFile_cart_ori = Path(thisDir+'/original_retinotopy_cartesian_'+subject_id)
         if ~figFile_cart_ori.is_file():        
             orig2d = getRetinotopy2D(retinotopy, mask_fix_idx, mask_var_idx, mask_fix_sub, mask_var_sub, map_h, map_w)
             plt.subplot(121); plt.imshow(orig2d[:,:,0].T, origin='lower'); plt.colorbar(); plt.title('azimuth')
@@ -256,7 +256,7 @@ def resultSummary(result, yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, 
             plt.savefig(figFile_cart_ori, dpi=200)
 
         #original data in polar coordinate
-        figFile_pol_ori = Path(thisDir+'/original_retinotopy_polar_'+subject_id+'png')
+        figFile_pol_ori = Path(thisDir+'/original_retinotopy_polar_'+subject_id)
         if ~figFile_pol_ori.is_file():        
             orig2d_pol = getRetinotopy2D(retinotopy_pol, mask_fix_idx, mask_var_idx, mask_fix_sub, mask_var_sub, map_h, map_w)
             plt.subplot(121); plt.imshow(orig2d_pol[:,:,0].T, origin='lower'); plt.title('eccentricity')
@@ -293,9 +293,55 @@ def getRetinotopy2D(retinotopy, mask_fix_idx, mask_var_idx, mask_fix_sub, mask_v
     return retinotopy2D    
 
 def getResult2D(result, yb, mask_var_sub, mask_fix_sub, map_h, map_w):
-    result2d = np.nan * np.ones((map_h,map_w,2))
+    shape2 = result.shape[1];
+    result2d = np.nan * np.ones((map_h,map_w,shape2))
     for pp in range(0,len(mask_var_sub)):
         result2d[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = result[pp,:]
     for qq in range(0,len(mask_fix_sub)):
         result2d[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = yb[qq,:]
     return result2d
+
+def getRegTermElements(y, yb, distance2D, gridIdx, mask_fix_idx, mask_var_idx, mask_fix_sub, mask_var_sub, map_h, map_w):
+    #From getRegTerm1
+    distance2D_tf_1 = np.zeros((len(mask_var_idx),len(mask_var_idx)))
+    for i in range(0,len(mask_var_idx)):
+        for j in range(0,len(mask_var_idx)):
+            distance2D_tf_1[i,j] = distance2D[np.where(gridIdx == mask_var_idx[i])[0][0],
+                                    np.where(gridIdx == mask_var_idx[j])[0][0]]
+    
+    yy_diff = np.expand_dims(y, 1) - np.expand_dims(y, 0)
+    yy_normsq = np.einsum('ijk,ijk->ij', yy_diff, yy_diff) # closeness in vf
+    reg1_element = np.multiply(1/np.exp(distance2D_tf_1), yy_normsq) #confirmed equivalence to retinotopy
+    #reg1_element = np.multiply(1/np.exp(distance2D_tf_1), np.ones(yy_normsq.shape))# confirmed equivalence to distance4D
+    #reg1_element = np.multiply(np.ones(np.exp(distance2D_tf_1).shape), yy_normsq)#TEMP
+    
+    #From getRegTerm2
+    distance2D_tf_2 = np.zeros((len(mask_var_idx),len(mask_fix_idx)))
+    for i in range(0,len(mask_var_idx)):
+        for j in range(0,len(mask_fix_idx)):
+            distance2D_tf_2[i,j] = distance2D[np.where(gridIdx == mask_var_idx[i])[0][0],
+                                    np.where(gridIdx == mask_fix_idx[j])[0][0]]
+    
+    yyb_diff = np.expand_dims(y, 1) - np.expand_dims(yb, 0)
+    yyb_normsq = np.einsum('ijk,ijk->ij', yyb_diff, yyb_diff) # closeness in vf
+    reg2_element = np.multiply(1/np.exp(distance2D_tf_2), yyb_normsq)
+    #reg2_element = np.multiply(1/np.exp(distance2D_tf_2), np.ones(yyb_normsq.shape))# confirmed quivalence to distance4D
+    #reg2_element = np.multiply(np.ones(np.exp(distance2D_tf_2).shape), yyb_normsq)# confirmed equivalence to retinotopy
+   
+    reg1_element = reg1_element.T;
+    reg2_element = reg2_element.T;
+    
+    #from getResult2D    
+    shape2 = reg1_element.shape[1];
+    reg_element3d = np.nan * np.ones((map_h,map_w,shape2))
+    for pp in range(0,len(mask_var_sub)):
+        reg_element3d[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = reg1_element[pp,:]
+    for qq in range(0,len(mask_fix_sub)):
+        reg_element3d[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = reg2_element[qq,:]
+    
+    reg_element4d = np.nan * np.ones((map_h,map_w,map_h,map_w)) #sy,sx,ty,tx
+    for pp in range(0,len(mask_var_sub)):
+        reg_element4d[mask_var_sub[pp,1],mask_var_sub[pp,0],:,:] = reg_element3d[:,:,pp]
+    
+    return reg_element4d
+        

@@ -29,6 +29,7 @@ import functions.dstools as dst
 #import time
 import matplotlib
 matplotlib.use('Agg')
+#matplotlib.use('QtAgg')
 import matplotlib.pyplot as plt
 from scipy.io import savemat
 from datetime import datetime
@@ -68,7 +69,7 @@ done_ids = ['114823','157336','585256','581450','725751','100610','102311',
 filepath = 'list_subj.txt'
 all_ids = read_six_digit_numbers(filepath,done_ids)
 all_ids = ['114823']
-#all_ids９ = ['905147']
+#all_ids = ['905147']
 loadDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
 
 
@@ -109,17 +110,16 @@ for ids in range(0,len(all_ids)):
         
         eta0 = 0.05      # initial lerning rate
         m = 0.8         # momentum
-        numb1 = 5;#10;
-        numb2 = 5;#10;
+        numb1 = 1;#5;#10;
+        numb2 = 1;#5;#10;
         
         # add small mount of noise to the prototypes, which might give the solution some variations
         prototype_noise = False
         
         ## load human brain data 
         #from compute_minimal_path_femesh_individual.m
-        distance2D = scipy.io.loadmat(osp.join(thisDir, 'minimal_path_midthickness_hmax2_' + subject_id + '.mat'))['distance2D']
-        distance2D_euc = scipy.io.loadmat(osp.join(thisDir, 'minimal_path_midthickness_hmax2_' + subject_id + '.mat'))['distance2D_euc']
-        distance2D_flat = scipy.io.loadmat(osp.join(thisDir, 'minimal_path_midthickness_hmax2_' + subject_id + '.mat'))['distance2D_flat']
+        distance2D = scipy.io.loadmat(osp.join(thisDir, 'minimal_path_midthickness_hmax2_' + subject_id + '_v.mat'))['distance2D_v']
+        distance2D_s = scipy.io.loadmat(osp.join(thisDir, 'minimal_path_midthickness_hmax2_' + subject_id + '_s.mat'))['distance2D_s']
         
         
         ## load retinotopy and vfs
@@ -228,18 +228,35 @@ for ids in range(0,len(all_ids)):
                         tf.reduce_sum(yx_gauss, axis=0)))
         
         #### regularization term 1 - within area
-        # n is a list of map_h * map_w objects. The i-th item of n is a list containing the indices of nodes neighboring the i-th node
-        n = e2d.neighborhood(map_h, map_w)
-        mask = e2d.make_mask(map_h, map_w, n)
-        #mask = tf.constant(e2d.make_mask(map_h, map_w, n), dtype=tf.float64, name='mask')
-        
-        # pairwise distance: first use broadcast to calculate pairwise difference
-        yy_diff = tf.expand_dims(y, 1) - tf.expand_dims(y, 0)
-        yy_normsq = tf.einsum('ijk,ijk->ij', yy_diff, yy_diff)
-        yy_normsq_masked = tf.multiply(mask[mask_var_idx[:,np.newaxis], mask_var_idx], 
-                                       yy_normsq)
-        
-        reg1 = tf.reduce_sum(yy_normsq_masked)
+        # # n is a list of map_h * map_w objects. The i-th item of n is a list containing the indices of nodes neighboring the i-th node
+        # n = e2d.neighborhood(map_h, map_w)
+        # mask = e2d.make_mask(map_h, map_w, n)
+        # #mask = tf.constant(e2d.make_mask(map_h, map_w, n), dtype=tf.float64, name='mask')      
+        # # pairwise distance: first use broadcast to calculate pairwise difference
+        # yy_diff = tf.expand_dims(y, 1) - tf.expand_dims(y, 0)
+        # yy_normsq = tf.einsum('ijk,ijk->ij', yy_diff, yy_diff)
+        # yy_normsq_masked = tf.multiply(mask[mask_var_idx[:,np.newaxis], mask_var_idx], 
+        #                                 yy_normsq)
+        # reg1 = tf.reduce_sum(yy_normsq_masked)
+              
+        def getRegTerm1(distance2D):
+            #extract subscripts used 
+            distance2D_tf_c = np.zeros((len(mask_var_idx),len(mask_var_idx)))
+            for i in range(0,len(mask_var_idx)):
+                for j in range(0,len(mask_var_idx)):
+                    distance2D_tf_c[i,j] = distance2D[np.where(gridIdx == mask_var_idx[i])[0][0],
+                                            np.where(gridIdx == mask_var_idx[j])[0][0]]
+            
+            distance2D_tf = tf.constant(distance2D_tf_c)
+            
+            #src_idx = np.arange(0,len(mask_var_idx))
+            yy_diff = tf.expand_dims(y, 1) - tf.expand_dims(y, 0)
+            yy_normsq = tf.einsum('ijk,ijk->ij', yy_diff, yy_diff) # closeness in vf
+            
+            # strategy5: weighted by 1/exp(distance2D)
+            distance2D_weighted = tf.multiply(1/tf.exp(distance2D_tf), yy_normsq)
+            reg1 = tf.reduce_sum(distance2D_weighted)
+            return reg1
         
         #### regularization term 2 - path in cortex 
         # y: V2 position in visual field [azimuth altitude] (variable)
@@ -265,14 +282,14 @@ for ids in range(0,len(all_ids)):
             return reg2
     
         
+        reg1 = getRegTerm1(distance2D)
         reg2 = getRegTerm2(distance2D)
     
-        # Euclidean distance on flat surface as a control
-        reg2_flat = getRegTerm2(distance2D_flat)
+        # shortest path along brain surface as a control
+        reg1_s = getRegTerm1(distance2D_s)
+        reg2_s = getRegTerm2(distance2D_s)
         
-        # Euclidean distance in 3D brain as another control
-        reg2_euc = getRegTerm2(distance2D_euc)
-        
+               
         
         #########################
         # optimization
@@ -311,89 +328,99 @@ for ids in range(0,len(all_ids)):
         ###########################
         
         
-        figFile_cart_ori = Path(thisDir+'/original_retinotopy_cartesian_'+subject_id+'png')
+        figFile_cart_ori = Path(thisDir+'/original_retinotopy_cartesian_'+subject_id)
         if figFile_cart_ori.is_file():
             os.remove(figFile_cart_ori)
-        figFile_pol_ori = Path(thisDir+'/original_retinotopy_polar_'+subject_id+'png')
+        figFile_pol_ori = Path(thisDir+'/original_retinotopy_polar_'+subject_id)
         if figFile_pol_ori.is_file():
             os.remove(figFile_pol_ori)
         
-        corr_azimuth = np.zeros((numb1,numb2))
-        corr_altitude = np.zeros((numb1,numb2))
-        corr_pa = np.zeros((numb1,numb2))
-        corr_azimuth_flat = np.zeros((numb1,numb2))
-        corr_altitude_flat = np.zeros((numb1,numb2))
-        corr_pa_flat = np.zeros((numb1,numb2))
-        corr_azimuth_euc = np.zeros((numb1,numb2))
-        corr_altitude_euc = np.zeros((numb1,numb2))
-        corr_pa_euc = np.zeros((numb1,numb2))
+        corr_azimuth_v = np.zeros((numb1,numb2))
+        corr_altitude_v = np.zeros((numb1,numb2))
+        corr_pa_v = np.zeros((numb1,numb2))
+        corr_azimuth_s = np.zeros((numb1,numb2))
+        corr_altitude_s = np.zeros((numb1,numb2))
+        corr_pa_s = np.zeros((numb1,numb2))
+        #corr_azimuth_euc = np.zeros((numb1,numb2))
+        #corr_altitude_euc = np.zeros((numb1,numb2))
+        #corr_pa_euc = np.zeros((numb1,numb2))
         
         for i1 in range(0, numb1):
             for i2 in range(0, numb2): 
                 #b1 = 0.02*1.6**i1 #smoothness
                 #b2 = 0.02*1.6**i2 #inter-areal path length
-                b1 = 0.01*2**i1
-                b2 = 0.01*2**i2
+                b1 = 0.01*2**1#i1
+                b2 = 0.01*2**5#i2
                 
                 print('running elastic net b1:' + str(b1) + ', b2:' + str(b2))
                 
                 
-                ## Minimal path length
+                ## Minimal path length in brain volume
                 suffix = tgt + '_' + subject_id + '_b1_' + "%d"%(1e3*b1) + '_b2_' + "%d"%(1e3*b2)
-                saveFile = Path(thisDir+'/summary_'+subject_id + suffix +'.mat')
+                saveFile = Path(thisDir + '/summary_' + suffix +'_vs.mat')
                 if saveFile.is_file():
                     os.remove(saveFile) 
                 
                 opt = tf.train.RMSPropOptimizer(current_eta, momentum = m).minimize(yx_cost + beta1 * reg1 + beta2 * reg2, global_step = global_step)
-                result = train(sess, opt, kappa, beta1, beta2, y, b1, b2, subject_id)
-                result2d = e2d.getResult2D(result[0], yb, mask_var_sub, mask_fix_sub, map_h, map_w)
-                summary = e2d.resultSummary(result[0], yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, mask_var_sub, mask_fix_idx, mask_fix_sub, thisDir, suffix, subject_id)
-                corr_azimuth[i1,i2] = summary[0]
-                corr_altitude[i1,i2] = summary[1]
-                corr_pa[i1,i2] = summary[2]
-    
-    
-                ## Euclidean distance on flat surface as a control
-                #need a normalization factor for b2/reg2??
-                suffix_flat = tgt + '_' + subject_id + '_b1_' + "%d"%(1e3*b1) + '_b2_' + "%d"%(1e3*b2) + "_flat"
-                opt_flat = tf.train.RMSPropOptimizer(current_eta, momentum = m).minimize(yx_cost + beta1 * reg1 + beta2 * reg2_flat, global_step = global_step)
-                result_flat = train(sess, opt_flat, kappa, beta1, beta2, y, b1, b2, subject_id)            
-                result2d_flat = e2d.getResult2D(result_flat[0], yb, mask_var_sub, mask_fix_sub, map_h, map_w)
-                summary_flat = e2d.resultSummary(result_flat[0], yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, mask_var_sub, mask_fix_idx, mask_fix_sub, thisDir, suffix_flat, subject_id)
-                corr_azimuth_flat[i1,i2] = summary_flat[0]
-                corr_altitude_flat[i1,i2] = summary_flat[1]
-                corr_pa_flat[i1,i2] = summary_flat[2]
+                result_v = train(sess, opt, kappa, beta1, beta2, y, b1, b2, subject_id)
+                result2d_v = e2d.getResult2D(result_v[0], yb, mask_var_sub, mask_fix_sub, map_h, map_w)
+                summary = e2d.resultSummary(result_v[0], yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, mask_var_sub, mask_fix_idx, mask_fix_sub, thisDir, suffix, subject_id)
+                corr_azimuth_v[i1,i2] = summary[0]
+                corr_altitude_v[i1,i2] = summary[1]
+                corr_pa_v[i1,i2] = summary[2]
                 
+                reg_final4d_v = e2d.getRegTermElements(result_v[0], yb, distance2D, 
+                                                     gridIdx,mask_fix_idx, mask_var_idx, 
+                                                     mask_fix_sub, mask_var_sub, map_h, map_w)
+    
+                ## MInimal path length on brain surface as a control
+                #need a normalization factor for b2/reg2??
+                suffix_s = tgt + '_' + subject_id + '_b1_' + "%d"%(1e3*b1) + '_b2_' + "%d"%(1e3*b2) + "_s"
+                opt_s = tf.train.RMSPropOptimizer(current_eta, momentum = m).minimize(yx_cost + beta1 * reg1_s + beta2 * reg2_s, global_step = global_step)
+                result_s = train(sess, opt_s, kappa, beta1, beta2, y, b1, b2, subject_id)            
+                result2d_s = e2d.getResult2D(result_s[0], yb, mask_var_sub, mask_fix_sub, map_h, map_w)
+                summary_s = e2d.resultSummary(result_s[0], yb, retinotopy, map_h, map_w, mask_idx, mask_var_idx, mask_var_sub, mask_fix_idx, mask_fix_sub, thisDir, suffix_s, subject_id)
+                corr_azimuth_s[i1,i2] = summary_s[0]
+                corr_altitude_s[i1,i2] = summary_s[1]
+                corr_pa_s[i1,i2] = summary_s[2]
+
+                reg_final4d_s = e2d.getRegTermElements(result_s[0], yb, distance2D_s, 
+                                                     gridIdx,mask_fix_idx, mask_var_idx, 
+                                                     mask_fix_sub, mask_var_sub, map_h, map_w)
+                               
                 savemat(saveFile,
-                        {'result2d': result2d, 'result2d_flat': result2d_flat,
-                          'b1': b1, 'b2': b2, 'result': result, 'result_flat': result_flat})
+                        {'result2d_v': result2d_v, 'result2d_s': result2d_s,
+                          'b1': b1, 'b2': b2, 
+                          'result_v': result_v, 'result_s': result_s,
+                          'reg_final4d_v': reg_final4d_v.astype(np.float32),
+                          'reg_final4d_s': reg_final4d_s.astype(np.float32)})
                 
     
         print('Done loop')      
     
         #summary across simulations
         plt.subplot(331);
-        plt.imshow(corr_azimuth, origin='lower'); plt.title('corr in azimuth'); plt.clim(.5, 1); plt.xlabel('b2: inter-areal path length'); plt.ylabel('b1: intra-areal smoothness')
+        plt.imshow(corr_azimuth_v, origin='lower'); plt.title('corr in azimuth'); plt.clim(.5, 1); plt.xlabel('b2: inter-areal path length'); plt.ylabel('b1: intra-areal smoothness')
     
         plt.subplot(332);
-        plt.imshow(corr_altitude, origin='lower'); plt.title('corr in altitude'); plt.clim(.5, 1);
+        plt.imshow(corr_altitude_v, origin='lower'); plt.title('corr in altitude'); plt.clim(.5, 1);
         
         plt.subplot(333);
-        plt.imshow(corr_pa, origin='lower'); plt.title('circcorr in PA'); plt.clim(.5, 1);
+        plt.imshow(corr_pa_v, origin='lower'); plt.title('circcorr in PA'); plt.clim(.5, 1);
         
         plt.subplot(334);
-        plt.imshow(corr_azimuth_flat, origin='lower'); plt.title('Euclidean dist on flat surface'); plt.clim(.5, 1); plt.xlabel('b2: inter-areal path length'); plt.ylabel('b1: intra-areal smoothness')
+        plt.imshow(corr_azimuth_s, origin='lower'); plt.title('shortest path on brain surface'); plt.clim(.5, 1); plt.xlabel('b2: inter-areal path length'); plt.ylabel('b1: intra-areal smoothness')
     
         plt.subplot(335);
-        plt.imshow(corr_altitude_flat, origin='lower'); plt.clim(.5, 1);  
+        plt.imshow(corr_altitude_s, origin='lower'); plt.clim(.5, 1);  
         
         plt.subplot(336);
-        plt.imshow(corr_pa_flat, origin='lower'); plt.clim(.5, 1);
+        plt.imshow(corr_pa_s, origin='lower'); plt.clim(.5, 1);
     
     
         plt.draw()
         plt.gcf().set_size_inches(20, 15)
-        FigFile = Path(thisDir+'/summary_correlation_'+subject_id+'.png')
+        FigFile = Path(thisDir+'/summary_correlation_'+subject_id+'_vs.png')
         if FigFile.is_file():
             os.remove(FigFile)
             
@@ -402,13 +429,13 @@ for ids in range(0,len(all_ids)):
         print("Done saving summary fig")
         
     
-        SummaryFile = Path(thisDir+'/summary_correlation_'+subject_id +'.mat')
+        SummaryFile = Path(thisDir+'/summary_correlation_'+subject_id +'_vs.mat')
         if SummaryFile.is_file():
             os.remove(SummaryFile)
             
         savemat(SummaryFile, 
-                 {'corr_azimuth': corr_azimuth,'corr_altitude': corr_altitude, 'corr_pa': corr_pa,
-                  'corr_azimuth_flat': corr_azimuth_flat,'corr_altitude_flat': corr_altitude_flat,  'corr_pa_flat': corr_pa_flat});
+                 {'corr_azimuth_v': corr_azimuth_v,'corr_altitude_v': corr_altitude_v, 'corr_pa_v': corr_pa_v,
+                  'corr_azimuth_s': corr_azimuth_s,'corr_altitude_s': corr_altitude_s,  'corr_pa_s': corr_pa_s});
         print("Done saving summary data")
         
         datetime.now()

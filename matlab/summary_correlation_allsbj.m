@@ -1,4 +1,4 @@
-subject_id = {'114823','157336','585256','581450','725751'};
+subject_id = {'114823'};
 saveDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
 
 b1 = 0.01*2.^(0:4);
@@ -11,9 +11,9 @@ for sid= 1:numel(subject_id)
     corr_altitude(:,:,sid) = summary.corr_altitude;
     corr_pa(:,:,sid)=summary.corr_pa;
     
-    corr_azimuth_euc(:,:,sid) = summary.corr_azimuth_euc;
-    corr_altitude_euc(:,:,sid) = summary.corr_altitude_euc;
-    corr_pa_euc(:,:,sid)=summary.corr_pa_euc;
+    % corr_azimuth_euc(:,:,sid) = summary.corr_azimuth_euc;
+    % corr_altitude_euc(:,:,sid) = summary.corr_altitude_euc;
+    % corr_pa_euc(:,:,sid)=summary.corr_pa_euc;
 
     corr_azimuth_flat(:,:,sid) = summary.corr_azimuth_flat;
     corr_altitude_flat(:,:,sid) = summary.corr_altitude_flat;
