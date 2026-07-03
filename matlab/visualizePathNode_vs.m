@@ -6,10 +6,10 @@ saveDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
 type = 'midthickness';%'white' %cannot generateMesh with 'pial'
 hmax = 2; %1: fine but too slow, 3: too coarse
 tgt = 'V+D';
-b1 = 0.02;
-b2 = 0.32;
+b1 = 0.32;
+b2 = 0.02;
 
-minscheme = 'surface';%'volume';%
+minscheme = 'volume';%'surface';%
 sid = 1;
 
 load(fullfile(saveDir, subject_id{sid}, ['geometry_retinotopy_'  subject_id{sid}   '.mat']),...
@@ -61,7 +61,7 @@ t3 = toc %~30s
 sxi = 29;%31;
 syi = 71;
 mask = ~isnan(result2d(:,:,1))';
-A = squeeze(log(reg_final4d(sxi,syi,:,:)))';%squeeze(log(1./reg_final4d(sxi,syi,:,:)))';
+A = squeeze((reg_final4d(sxi,syi,:,:)))';%squeeze(log(1./reg_final4d(sxi,syi,:,:)))';
 A(syi,sxi)=0; %exclude recurrent connectivity
 fig1 = figure;
 ax(1)=subplot(1,3,1); imagesc(xaxis, yaxis, squeeze(result2d(:,:,1))','alphadata',mask); hold on; plot(xaxis(sxi), yaxis(syi),'r*'); axis equal tight xy; title('simulated azimuth');
@@ -75,7 +75,7 @@ close(fig1);
 %[~, idx] = max(A(:));
 [~, idx] = sort(A(:),'descend');
 idx(isnan(A(idx)))=[];
-N = 40; %number of target nodes
+N = 5; %number of target nodes
 [tyi, txi] = ind2sub(size(A), idx(1:N));
 fig2 = examinePathNode(Vertex, distance4D, path_node4D, xaxis, yaxis, ...
     xy2node, sxi*ones(N,1), syi*ones(N,1), txi, tyi, Face_s, Vertex_s, 0.3);

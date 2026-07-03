@@ -371,7 +371,8 @@ for ids in range(0,len(all_ids)):
                 
                 reg_final4d_v = e2d.getRegTermElements(result_v[0], yb, distance2D, 
                                                      gridIdx,mask_fix_idx, mask_var_idx, 
-                                                     mask_fix_sub, mask_var_sub, map_h, map_w)
+                                                     mask_fix_sub, mask_var_sub, map_h, map_w,
+                                                     b1,b2)
     
                 ## MInimal path length on brain surface as a control
                 #need a normalization factor for b2/reg2??
@@ -386,7 +387,8 @@ for ids in range(0,len(all_ids)):
 
                 reg_final4d_s = e2d.getRegTermElements(result_s[0], yb, distance2D_s, 
                                                      gridIdx,mask_fix_idx, mask_var_idx, 
-                                                     mask_fix_sub, mask_var_sub, map_h, map_w)
+                                                     mask_fix_sub, mask_var_sub, map_h, map_w,
+                                                     b1, b2)
                                
                 savemat(saveFile,
                         {'result2d_v': result2d_v, 'result2d_s': result2d_s,

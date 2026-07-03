@@ -301,7 +301,8 @@ def getResult2D(result, yb, mask_var_sub, mask_fix_sub, map_h, map_w):
         result2d[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = yb[qq,:]
     return result2d
 
-def getRegTermElements(y, yb, distance2D, gridIdx, mask_fix_idx, mask_var_idx, mask_fix_sub, mask_var_sub, map_h, map_w):
+def getRegTermElements(y, yb, distance2D, gridIdx, mask_fix_idx, mask_var_idx, 
+                       mask_fix_sub, mask_var_sub, map_h, map_w, b1, b2):
     #From getRegTerm1
     distance2D_tf_1 = np.zeros((len(mask_var_idx),len(mask_var_idx)))
     for i in range(0,len(mask_var_idx)):
@@ -335,9 +336,9 @@ def getRegTermElements(y, yb, distance2D, gridIdx, mask_fix_idx, mask_var_idx, m
     shape2 = reg1_element.shape[1];
     reg_element3d = np.nan * np.ones((map_h,map_w,shape2))
     for pp in range(0,len(mask_var_sub)):
-        reg_element3d[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = reg1_element[pp,:]
+        reg_element3d[mask_var_sub[pp,1],mask_var_sub[pp,0],:] = b1*reg1_element[pp,:]
     for qq in range(0,len(mask_fix_sub)):
-        reg_element3d[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = reg2_element[qq,:]
+        reg_element3d[mask_fix_sub[qq,1],mask_fix_sub[qq,0],:] = b2*reg2_element[qq,:]
     
     reg_element4d = np.nan * np.ones((map_h,map_w,map_h,map_w)) #sy,sx,ty,tx
     for pp in range(0,len(mask_var_sub)):
