@@ -29,7 +29,6 @@ import functions.dstools as dst
 #import time
 import matplotlib
 matplotlib.use('Agg')
-#matplotlib.use('QtAgg')
 import matplotlib.pyplot as plt
 from scipy.io import savemat
 from datetime import datetime
@@ -59,17 +58,10 @@ def read_six_digit_numbers(filepath, omit=None):
 
     return six_digit_numbers
 
-done_ids = ['114823','157336','585256','581450','725751','100610','102311',
-            '102816','104416','105923','108323','109123','782561','783462',
-            '789373','814649','818859','825048','826353','833249','859671',
-            '861456','871762','872764','878776','878877','898176','899885',
-            '901139','901442','910241','926862','927359','942658','943862',
-            '951457','958976','966975','971160','973770','995174']; #from Ribeiro 2023 Fig1
+done_ids = [];
 
 filepath = 'list_subj.txt'
-all_ids = read_six_digit_numbers(filepath,done_ids)
-all_ids = ['114823']
-#all_ids = ['905147']
+all_ids = ['avg'] #read_six_digit_numbers(filepath,done_ids)
 loadDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
 
 
@@ -110,8 +102,8 @@ for ids in range(0,len(all_ids)):
         
         eta0 = 0.05      # initial lerning rate
         m = 0.8         # momentum
-        numb1 = 1;#5;#10;
-        numb2 = 1;#5;#10;
+        numb1 = 5;#10;
+        numb2 = 5;#10;
         
         # add small mount of noise to the prototypes, which might give the solution some variations
         prototype_noise = False
@@ -349,8 +341,8 @@ for ids in range(0,len(all_ids)):
             for i2 in range(0, numb2): 
                 #b1 = 0.02*1.6**i1 #smoothness
                 #b2 = 0.02*1.6**i2 #inter-areal path length
-                b1 = 0.01*2**1#i1
-                b2 = 0.01*2**5#i2
+                b1 = 0.01*2**i1
+                b2 = 0.01*2**i2
                 
                 print('running elastic net b1:' + str(b1) + ', b2:' + str(b2))
                 
@@ -369,10 +361,10 @@ for ids in range(0,len(all_ids)):
                 corr_altitude_v[i1,i2] = summary[1]
                 corr_pa_v[i1,i2] = summary[2]
                 
-                reg_final4d_v = e2d.getRegTermElements(result_v[0], yb, distance2D, 
-                                                     gridIdx,mask_fix_idx, mask_var_idx, 
-                                                     mask_fix_sub, mask_var_sub, map_h, map_w,
-                                                     b1,b2)
+                #reg_final4d_v = e2d.getRegTermElements(result_v[0], yb, distance2D, 
+                #                                     gridIdx,mask_fix_idx, mask_var_idx, 
+                #                                     mask_fix_sub, mask_var_sub, map_h, map_w,
+                #                                     b1,b2)
     
                 ## MInimal path length on brain surface as a control
                 #need a normalization factor for b2/reg2??
@@ -385,17 +377,17 @@ for ids in range(0,len(all_ids)):
                 corr_altitude_s[i1,i2] = summary_s[1]
                 corr_pa_s[i1,i2] = summary_s[2]
 
-                reg_final4d_s = e2d.getRegTermElements(result_s[0], yb, distance2D_s, 
-                                                     gridIdx,mask_fix_idx, mask_var_idx, 
-                                                     mask_fix_sub, mask_var_sub, map_h, map_w,
-                                                     b1, b2)
+                #reg_final4d_s = e2d.getRegTermElements(result_s[0], yb, distance2D_s, 
+                #                                     gridIdx,mask_fix_idx, mask_var_idx, 
+                #                                     mask_fix_sub, mask_var_sub, map_h, map_w,
+                #                                     b1, b2)
                                
                 savemat(saveFile,
                         {'result2d_v': result2d_v, 'result2d_s': result2d_s,
                           'b1': b1, 'b2': b2, 
-                          'result_v': result_v, 'result_s': result_s,
-                          'reg_final4d_v': reg_final4d_v.astype(np.float32),
-                          'reg_final4d_s': reg_final4d_s.astype(np.float32)})
+                          'result_v': result_v, 'result_s': result_s})
+                 #         'reg_final4d_v': reg_final4d_v.astype(np.float32),
+                 #         'reg_final4d_s': reg_final4d_s.astype(np.float32)})
                 
     
         print('Done loop')      

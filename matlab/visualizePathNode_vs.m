@@ -20,6 +20,7 @@ load(fullfile(saveDir, subject_id{sid}, ['geometry_retinotopy_'  subject_id{sid}
 suffix = [tgt '_'  subject_id{sid} '_b1_' num2str(1e3*b1) '_b2_' num2str(1e3*b2)];
 saveName_enet = fullfile(saveDir, subject_id{sid},...
     ['summary_' suffix +'_vs.mat']);
+suffix_fig = ['_' tgt '_b1_' num2str(1e3*b1) '_b2_' num2str(1e3*b2)];
 
 load(fullfile(saveDir, subject_id{sid}, ['minimal_path_' type '_hmax' ...
     num2str(hmax) '_' subject_id{sid} '_s.mat']),'Face_s','Vertex_s');
@@ -68,7 +69,7 @@ ax(1)=subplot(1,3,1); imagesc(xaxis, yaxis, squeeze(result2d(:,:,1))','alphadata
 ax(2)=subplot(1,3,2); imagesc(xaxis, yaxis, squeeze(result2d(:,:,2))','alphadata',mask); hold on; plot(xaxis(sxi), yaxis(syi),'r*'); axis equal tight xy; title('simulated elevation');
 ax(3)=subplot(1,3,3); imagesc(xaxis, yaxis, A,'alphadata',mask); hold on; plot(xaxis(sxi), yaxis(syi),'r*'); axis equal tight xy; title('connectivity strength');
 linkaxes(ax);
-screen2png([saveName_graph(1:end-4) suffix], fig1);
+screen2png([saveName_graph(1:end-4) suffix_fig], fig1);
 close(fig1);
 
 %% obtain target pixel
@@ -79,6 +80,6 @@ N = 5; %number of target nodes
 [tyi, txi] = ind2sub(size(A), idx(1:N));
 fig2 = examinePathNode(Vertex, distance4D, path_node4D, xaxis, yaxis, ...
     xy2node, sxi*ones(N,1), syi*ones(N,1), txi, tyi, Face_s, Vertex_s, 0.3);
-screen2png([saveName_graph(1:end-4) suffix '_pathNode'], fig2);
+screen2png([saveName_graph(1:end-4) suffix_fig '_pathNode'], fig2);
 close(fig2);
 

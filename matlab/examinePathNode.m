@@ -30,8 +30,8 @@ end
 % yrange = prctile(vertices([vidx_s vidx_t], 2),[0 100]) + [-margin margin];
 % zrange = prctile(vertices([vidx_s vidx_t], 3),[0 100]) + [-margin margin];
 xrange = [-50 10];
-yrange = [-90 -30];
-zrange = [-50 10];
+yrange = [-90 -30]-20;
+zrange = [-50 10]+20;
 
 f = figure('position',[0 0 1980 1080]);
 subplot(141); %distance on flattened map from (sx,sy)

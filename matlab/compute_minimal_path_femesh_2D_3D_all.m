@@ -1,5 +1,5 @@
 % subject_id = {'avg','114823','157336','585256','581450','725751'};
-subject_id = getSubjectId;%setxor(getSubjectId, {'114823','157336','585256','581450','725751'});
+subject_id = {'avg'};%getSubjectId;%setxor(getSubjectId, {'114823','157336','585256','581450','725751'});
 %114823: meshing failed for hmax of 2 and hmin of 1
 
 %loadDir = '/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/data/';
@@ -10,8 +10,8 @@ type = 'midthickness';%'white' %cannot generateMesh with 'pial'
 hmax = 2; %1: fine but too slow, 3: too coarse
 
 % source and target voxels for sanity check
-sxi = 40; syi = 60; %source pixel position on flattend map
 txi = [15:10:55]; tyi = 70*ones(1,numel(txi)); %target pixel position on flattend map
+sxi = 40*ones(1,numel(txi)); syi = 60*ones(1,numel(txi)); %source pixel position on flattend map
 
 for sid = 1:numel(subject_id)
 
