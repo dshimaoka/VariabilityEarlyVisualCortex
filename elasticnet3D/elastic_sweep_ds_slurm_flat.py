@@ -61,8 +61,7 @@ def read_six_digit_numbers(filepath, omit=None):
 done_ids = [];
 
 filepath = 'list_subj.txt'
-#all_ids = ['avg'] #read_six_digit_numbers(filepath,done_ids)
-all_ids = ['165436','175237','177746','178647','195041','214524','239136','318637','601127','833249','927359'];
+all_ids = ['114823']#['avg'] #read_six_digit_numbers(filepath,done_ids)
 loadDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
 
 
@@ -113,6 +112,13 @@ for ids in range(0,len(all_ids)):
         #from compute_minimal_path_femesh_individual.m
         distance2D = scipy.io.loadmat(osp.join(thisDir, 'minimal_path_midthickness_hmax2_' + subject_id + '_v.mat'))['distance2D_v']
         distance2D_s = scipy.io.loadmat(osp.join(thisDir, 'minimal_path_midthickness_hmax2_' + subject_id + '_s.mat'))['distance2D_s']
+        
+        ## replace with ground avg. 4/9/2026
+        mean_val = np.nanmean(distance2D)
+        distance2D[~np.isnan(distance2D)] = mean_val
+
+        mean_val_s = np.nanmean(distance2D_s)
+        distance2D_s[~np.isnan(distance2D_s)] = mean_val_s
         
         
         ## load retinotopy and vfs
@@ -349,8 +355,8 @@ for ids in range(0,len(all_ids)):
                 
                 
                 ## Minimal path length in brain volume
-                suffix = tgt + '_' + subject_id + '_b1_' + "%d"%(1e3*b1) + '_b2_' + "%d"%(1e3*b2)
-                saveFile = Path(thisDir + '/summary_' + suffix +'_vs.mat')
+                suffix = tgt + '_' + subject_id + '_b1_' + "%d"%(1e3*b1) + '_b2_' + "%d"%(1e3*b2) + '_flat'
+                saveFile = Path(thisDir + '/summary_' + suffix +'_vs_flat.mat')
                 if saveFile.is_file():
                     os.remove(saveFile) 
                 
@@ -415,7 +421,7 @@ for ids in range(0,len(all_ids)):
     
         plt.draw()
         plt.gcf().set_size_inches(20, 15)
-        FigFile = Path(thisDir+'/summary_correlation_'+subject_id+'_vs.png')
+        FigFile = Path(thisDir+'/summary_correlation_'+subject_id+'_vs_flat.png')
         if FigFile.is_file():
             os.remove(FigFile)
             
@@ -424,7 +430,7 @@ for ids in range(0,len(all_ids)):
         print("Done saving summary fig")
         
     
-        SummaryFile = Path(thisDir+'/summary_correlation_'+subject_id +'_vs.mat')
+        SummaryFile = Path(thisDir+'/summary_correlation_'+subject_id +'_vs_flat.mat')
         if SummaryFile.is_file():
             os.remove(SummaryFile)
             
