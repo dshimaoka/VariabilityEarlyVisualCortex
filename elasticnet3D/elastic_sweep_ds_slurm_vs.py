@@ -62,7 +62,7 @@ done_ids = [];
 
 filepath = 'list_subj.txt'
 #all_ids = ['avg'] #read_six_digit_numbers(filepath,done_ids)
-all_ids = ['165436','175237','177746','178647','195041','214524','239136','318637','601127','833249','927359'];
+all_ids = ['114823'];
 loadDir = '/mnt/dshi0006_market/VariabilityEarlyVisualCortex/';
 
 
@@ -103,8 +103,8 @@ for ids in range(0,len(all_ids)):
         
         eta0 = 0.05      # initial lerning rate
         m = 0.8         # momentum
-        numb1 = 5;#10;
-        numb2 = 5;#10;
+        numb1 = 1;#5;#10;
+        numb2 = 2;#5;#10;
         
         # add small mount of noise to the prototypes, which might give the solution some variations
         prototype_noise = False

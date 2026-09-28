@@ -1,4 +1,6 @@
 function theta_binary_masked = getBinaryTheta(theta, tolerance, minNPix, mask)
+%tolerance = 45;%deg
+%minNPix = 20; %minimum number of pixels to retain 
 %theta: [deg]
 
 if nargin < 4
@@ -11,8 +13,6 @@ if nargin < 4
     % mask = imclose(original.areaMatrix{2}+original.areaMatrix{3}, strel('disk',1)); %connect areal boundaries
 end
 
-%tolerance = 45;%deg
-%minNPix = 20; %minimum number of pixels to retain 
 
 % house theta in [0 360] deg
 idx = theta < 0;
